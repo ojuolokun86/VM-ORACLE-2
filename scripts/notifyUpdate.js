@@ -10,8 +10,9 @@ const NOTIFICATION_FILE = path.join(process.cwd(), '.update-notification');
 const notification = {
     version,
     timestamp: Date.now(),
-    message: '🚀 Bot has been updated!'
+    message: '🚀 Bot has been updated to the latest version!\n\n> ✨ New Features Added!\n\n> 👉 Use .menu or .help to explore what’s new.'
 };
+
 
 fs.writeFileSync(NOTIFICATION_FILE, JSON.stringify(notification, null, 2));
 console.log('📝 Update notification queued:', notification);

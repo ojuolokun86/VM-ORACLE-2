@@ -55,36 +55,36 @@ const getMainMenu = (
 > stgif → Sticker to GIF
 > kill → Kill someone
 > hug → Hug someone
->joke → Tell a joke
->fact → Tell a fact
->quote → Tell a quote
->imagine → Generate AI image
->slap → Slap someone
->hug → Hug someone
->kick → Kick someone
->poke → Poke someone
->tick → Tick someone
->shoot → Shoot someone
->feed → Feed someone
->pat → Pat someone
->kill → Kill someone
->kiss → Kiss someone
->laugh → Laugh at someone
->lick → lick someone
->blush → blush at someone
->shrug → shrug at someone
->smile → smile at someone
->stare → stare at someone
->yeet → yeet someone
->cuddle → cuddle someone
->highfive → highfive someone
->facepalm → facepalm someone
->think → think at someone
->pout → pout at someone
->bite → bite someone
->smug → smug at someone
->baka → baka at someone
->translate → Translate text
+> joke → Tell a joke
+> fact → Tell a fact
+> quote → Tell a quote
+> imagine → Generate AI image
+> slap → Slap someone
+> hug → Hug someone
+> kick → Kick someone
+> poke → Poke someone
+> tick → Tick someone
+> shoot → Shoot someone
+> feed → Feed someone
+> pat → Pat someone
+> kill → Kill someone
+> kiss → Kiss someone
+> laugh → Laugh at someone
+> lick → lick someone
+> blush → blush at someone
+> shrug → shrug at someone
+> smile → smile at someone
+> stare → stare at someone
+> yeet → yeet someone
+> cuddle → cuddle someone
+> highfive → highfive someone
+> facepalm → facepalm someone
+> think → think at someone
+> pout → pout at someone
+> bite → bite someone
+> smug → smug at someone
+> baka → baka at someone
+> translate → Translate text
 
 📁 *MEDIA*
 > ss → Take screenshot of a webpage
