@@ -1,0 +1,32 @@
+name: Deploy to Oracle VM
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USER }}
+          key: ${{ secrets.AWS_SSH_KEY }}
+          script: |
+            sudo apt-get update
+            sudo apt install yt-dlp
+            cd ~/AWS-SERVER
+            git pull origin main
+            npm install @whiskeysockets/baileys@latest
+            npm install
+            pm2 restart aws-v2 || pm2 start src/index.js --name aws-v2
+            # Wait for the bot to fully initialize
+            sleep 60
+            # Send update notifications with the correct version
+            node scripts/notifyUpdate.js
