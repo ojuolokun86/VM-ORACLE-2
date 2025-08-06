@@ -15,17 +15,15 @@ jobs:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ secrets.AWS_HOST }}
-          username: ${{ secrets.AWS_USER }}
-          key: ${{ secrets.AWS_SSH_KEY }}
+          host: ${{ secrets.ORACLE_HOST }}
+          username: ${{ secrets.ORACLE_USER }}
+          key: ${{ secrets.ORACLE_SSH_KEY }}
           script: |
-            sudo apt-get update
-            sudo apt install yt-dlp
-            cd ~/AWS-SERVER
+            cd ~/VM-ORACLE-2
             git pull origin main
             npm install @whiskeysockets/baileys@latest
             npm install
-            pm2 restart aws-v2 || pm2 start src/index.js --name aws-v2
+            pm2 restart bmm || pm2 start src/index.js --name bmm
             # Wait for the bot to fully initialize
             sleep 60
             # Send update notifications with the correct version
