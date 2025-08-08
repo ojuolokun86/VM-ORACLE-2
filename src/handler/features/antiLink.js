@@ -1,25 +1,25 @@
 const sendToChat = require('../../utils/sendToChat');
 const { setAntilinkSettings, getAntilinkSettings } = require('../../database/antilinkDb');
 const { isBotOwner } = require('../../database/database');
-
-const menu = (settings) => `
-🤖 [ANTILINK SECURITY MODULE]
-────────────────────────────
-[CURRENT CONFIGURATION]
-• WARN LIMIT: ${settings.warnLimit || 2}
-• ADMIN BYPASS: ${settings.bypassAdmins ? '🟢 ENABLED' : '🔴 DISABLED'}
-────────────────────────────
-[COMMAND OPTIONS]
-0 → DISABLE ANTILINK
-1 → WARN USER ONLY
-2 → WARN & REMOVE USER
-3 → REMOVE USER IMMEDIATELY
-4 → SET WARN LIMIT (CURRENT: ${settings.warnLimit || 2})
-5 → TOGGLE ADMIN BYPASS
-────────────────────────────
-[SYSTEM NOTE]: ONLY THE BOT OWNER CAN MODIFY THESE SETTINGS.
-[ACTION REQUIRED]: REPLY WITH A NUMBER TO EXECUTE COMMAND.
-`;
+const { checkIfAdmin } = require('../command/groupCommand');
+const menu = (settings) => 
+`🛡️ [Antilink Security Module]
+  
+🖥️ [CONFIGURATION]
+> • Warn Limit: ${settings.warnLimit || 2}
+> • Admin Bypass: ${settings.bypassAdmins ? '🟢 Enabled' : '🔴 Disabled'}
+> • Mode: ${settings.mode || 'Off'}
+  
+🖥️ [COMMAND OPTIONS]
+> 0 → Disable Antilink
+> 1 → Warn User Only
+> 2 → Warn & Remove User
+> 3 → Remove User Immediately
+> 4 → Set Warn Limit (Current: ${settings.warnLimit || 2})
+> 5 → Toggle Admin Bypass
+  
+*Action Required: Reply with a number to execute command.*`;
+  
 
 
 async function handleAntilinkCommand(sock, msg, phoneNumber) {
@@ -29,10 +29,16 @@ async function handleAntilinkCommand(sock, msg, phoneNumber) {
   const botLid = sock.user?.lid?.split(':')[0]?.split('@')[0];
   const groupId = from;
   const senderId = sender?.split('@')[0];
-
+   if (!groupId || !groupId.endsWith('@g.us')) {
+      return sendToChat(sock, groupId, { message: '> ❌ This command only works in groups.' }, { quoted: msg });
+    }
+    const isBotAdmin = await checkIfAdmin(sock, groupId, botLid); 
+    if (!isBotAdmin) {
+      return sendToChat(sock, groupId, { message: '> ❌ I need to be an admin to activate antilink.' }, { quoted: msg });
+    }
   if (!msg.key.fromMe && !isBotOwner(senderId, botId, botLid)) {
     return await sendToChat(sock, from, {
-      message: '❌ Only the bot owner can change the Antilink settings.'
+      message: '> ❌ Only the bot owner can change the Antilink settings.'
     });
   }
 

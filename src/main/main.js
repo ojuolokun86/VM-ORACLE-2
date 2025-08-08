@@ -41,17 +41,21 @@ async function startBmmBot({ authId, phoneNumber, country, pairingMethod, onStat
             creds: state.creds,
             keys: makeCacheableSignalKeyStore(state.keys, pino({ level: "fatal" }).child({ level: "fatal" })),
         },
-        browser: ['Ubuntu', 'Opera', '125.0.6422.112'],
+        browser: ['Linux', 'Safari', '18.5'],
         logger: pino({ level: 'silent' }),
         printQRInTerminal: false,
         generateHighQualityLinkPreview: true,
-        receivedPendingNotifications: true,
+        receivedPendingNotifications: false,
         appStateSyncIntervalMs: 60000,
         keepAliveIntervalMs: 30000, // Ping WhatsApp every 30s
         connectTimeoutMs: 60000, // 60s timeout
         emitOwnEvents: true, // emits your own messages (fromMe)
         linkPreviewImageThumbnailWidth: 1200, // thumbnail preview size
         fireInitQueries: false,
+        shouldSyncHistoryMessage: false,
+        syncFullHistory: false,            // Don’t pull old messages
+        downloadHistory: false,            // Avoid history download
+        markOnlineOnConnect: false,   // Don’t wait for chat list before use
        getMessage: async (key) => {
         return (await store.loadMessage?.(key.remoteJid, key.id)) || undefined;
          }
@@ -98,7 +102,7 @@ async function startBmmBot({ authId, phoneNumber, country, pairingMethod, onStat
                 onQr,
                 onPairingCode,
                 restartType: 'initial',
-                additionalInfo: '✨ Your bot is now online and ready to use!',
+                additionalInfo: `✨ Your bot is now online and ready to use!\n\n> If this is your first time using the bot, responses to your commands may be slightly delayed. This is normal — the bot is performing an initial sync with WhatsApp’s servers to load all necessary data. The process runs automatically and may take a short while to complete.`
                 });
             console.log(`✅ User ${user_id} saved to database`);
             }
@@ -110,13 +114,15 @@ async function startBmmBot({ authId, phoneNumber, country, pairingMethod, onStat
             }, 5000); // 5 seconds
 
             // Send initial message after successful connection
-            if (isInitialStart) {
-                const { sendRestartMessage } = require('./restart');
-                sendRestartMessage(authId, bmm, phoneNumber, {
-                    type: 'initial',
-                    additionalInfo: '✨ Your bot is now online and ready to use!'
-                }).catch(e => console.error('Failed to send initial message:', e.message));
-            }
+//             if (isInitialStart) {
+//                 const { sendRestartMessage } = require('./restart');
+//                 sendRestartMessage(authId, bmm, phoneNumber, {
+//                     type: 'initial',
+//                     additionalInfo: `✨ Your bot is now online and ready to use!
+
+// > If this is your first time using the bot, responses to your commands may be slightly delayed. This is normal — the bot is performing an initial sync with WhatsApp’s servers to load all necessary data. The process runs automatically and may take a short while to complete.`
+//                 }).catch(e => console.error('Failed to send initial message:', e.message));
+//             }
         }        
         if (connection === 'close') {
             recordBotActivity({ user: authId, bot: phoneNumber, action: 'connection_close' });
@@ -198,7 +204,7 @@ async function startBmmBot({ authId, phoneNumber, country, pairingMethod, onStat
     sessions.set(sessionKey, { bmm, cleanup });
 
     bmm.ev.on('messages.upsert', async ({ messages, }) => {
-   //console.log(`Received messages for ${phoneNumber}:`, messages);
+   //console.log(`📩 Received messages for ${phoneNumber}:`, messages);
     const msg = messages[0];
     if (!msg.message) return;
     await handleMessage({

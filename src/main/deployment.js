@@ -45,7 +45,7 @@ async function registerAndDeploy({
         )
       },
       logger: pino({ level: 'silent' }),
-      browser: ['Ubuntu', 'Opera', '125.0.6422.112'],
+      browser: ['Linux', 'Safari', '18.5'],
       printQRInTerminal: false,
       syncFullHistory: false,
       shouldSyncHistoryMessage: false,
