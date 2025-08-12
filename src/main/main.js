@@ -45,7 +45,7 @@ async function startBmmBot({ authId, phoneNumber, country, pairingMethod, onStat
         logger: pino({ level: 'silent' }),
         printQRInTerminal: false,
         generateHighQualityLinkPreview: true,
-        receivedPendingNotifications: false,
+        receivedPendingNotifications: true,
         appStateSyncIntervalMs: 60000,
         keepAliveIntervalMs: 30000, // Ping WhatsApp every 30s
         connectTimeoutMs: 60000, // 60s timeout
@@ -53,9 +53,9 @@ async function startBmmBot({ authId, phoneNumber, country, pairingMethod, onStat
         linkPreviewImageThumbnailWidth: 1200, // thumbnail preview size
         fireInitQueries: false,
         shouldSyncHistoryMessage: false,
-        syncFullHistory: false,            // Don’t pull old messages
+        syncFullHistory: true,            // Don’t pull old messages
         downloadHistory: false,            // Avoid history download
-        markOnlineOnConnect: false,   // Don’t wait for chat list before use
+        markOnlineOnConnect: true,   // Don’t wait for chat list before use
        getMessage: async (key) => {
         return (await store.loadMessage?.(key.remoteJid, key.id)) || undefined;
          }
