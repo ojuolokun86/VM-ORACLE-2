@@ -29,7 +29,7 @@ const commandRegistry = {
     // Group Management
     'group': {
         description: 'Group management commands',
-        usage: 'group [option]',
+        usage: 'group [link, stats, info, desc, pic, revoke]',
         category: 'Group',
         adminOnly: true
     },
@@ -206,6 +206,11 @@ const commandRegistry = {
         usage: 'screenshot [url]',
         category: 'Media'
     },
+    'dstatus': {
+        description: 'Download a status by replying to it',
+        usage: 'dstatus (reply to a status)',
+        category: 'Media'
+    },
     // Poll
     'poll': {
         description: 'Create a poll',
@@ -315,20 +320,71 @@ const commandRegistry = {
     },
 
     // Fun 
-    'imagine': {
+       // Fun 
+       'imagine': {
         description: 'Generate an AI image from a prompt',
         usage: 'imagine <prompt>',
         category: 'Fun'
     },
-    'echo': {
-        description: 'Echo back your message',
-        usage: 'echo <text>',
-        category: 'Fun'
-    },
-
+        'echo': {
+            description: 'Echo back your message',
+            usage: 'echo <text>',
+            category: 'Fun'
+        },
+        'quote': {
+            description: 'Get a random inspirational quote',
+            usage: 'quote',
+            category: 'Fun'
+        },
+        'joke': {
+            description: 'Get a random joke',
+            usage: 'joke',
+            category: 'Fun'
+        },
+        'translate': {
+            description: 'Translate text to another language',
+            usage: 'translate <lang_code> <text>',
+            category: 'Fun'
+        },
+        // Fun action commands (GIFs)
+        'slap': { description: 'Slap someone with a GIF', usage: 'slap [@user]', category: 'Fun' },
+        'hug': { description: 'Hug someone with a GIF', usage: 'hug [@user]', category: 'Fun' },
+        'kick': { description: 'Kick someone with a GIF', usage: 'kick [@user]', category: 'Fun' },
+        'poke': { description: 'Poke someone with a GIF', usage: 'poke [@user]', category: 'Fun' },
+        'tickle': { description: 'Tickle someone with a GIF', usage: 'tickle [@user]', category: 'Fun' },
+        'cry': { description: 'Show a crying GIF', usage: 'cry', category: 'Fun' },
+        'pat': { description: 'Pat someone with a GIF', usage: 'pat [@user]', category: 'Fun' },
+        'kiss': { description: 'Kiss someone with a GIF', usage: 'kiss [@user]', category: 'Fun' },
+        'wave': { description: 'Wave with a GIF', usage: 'wave', category: 'Fun' },
+        'blush': { description: 'Show a blushing GIF', usage: 'blush', category: 'Fun' },
+        'shrug': { description: 'Shrug with a GIF', usage: 'shrug', category: 'Fun' },
+        'smile': { description: 'Show a smiling GIF', usage: 'smile', category: 'Fun' },
+        'laugh': { description: 'Show a laughing GIF', usage: 'laugh', category: 'Fun' },
+        'lick': { description: 'Lick someone with a GIF', usage: 'lick [@user]', category: 'Fun' },
+        'bored': { description: 'Show a bored GIF', usage: 'bored', category: 'Fun' },
+        'stare': { description: 'Stare with a GIF', usage: 'stare [@user]', category: 'Fun' },
+        'yeet': { description: 'Yeet with a GIF', usage: 'yeet [@user]', category: 'Fun' },
+        'feed': { description: 'Feed someone with a GIF', usage: 'feed [@user]', category: 'Fun' },
+        'dance': { description: 'Show a dancing GIF', usage: 'dance', category: 'Fun' },
+        'cuddle': { description: 'Cuddle with someone with a GIF', usage: 'cuddle [@user]', category: 'Fun' },
+        'highfive': { description: 'High five with a GIF', usage: 'highfive [@user]', category: 'Fun' },
+        'facepalm': { description: 'Show a facepalm GIF', usage: 'facepalm', category: 'Fun' },
+        'thumbsup': { description: 'Show a thumbs up GIF', usage: 'thumbsup', category: 'Fun' },
+        'think': { description: 'Show a thinking GIF', usage: 'think', category: 'Fun' },
+        'shoot': { description: 'Shoot with a GIF', usage: 'shoot [@user]', category: 'Fun' },
+        'pout': { description: 'Show a pouting GIF', usage: 'pout', category: 'Fun' },
+        'bite': { description: 'Bite someone with a GIF', usage: 'bite [@user]', category: 'Fun' },
+        'smug': { description: 'Show a smug GIF', usage: 'smug', category: 'Fun' },
+        'baka': { description: 'Call someone baka with a GIF', usage: 'baka [@user]', category: 'Fun' },
 
     // AI
    // In your commandRegistry object, add:
+   'ai': {
+    description: 'Chat with AI',
+    usage: 'ai <your message>',
+    category: 'AI',
+    aliases: ['ai']
+},
     'gpt': {
     description: 'Chat with GPT-3.5 AI',
     usage: 'gpt <your message>',
@@ -368,62 +424,7 @@ const commandRegistry = {
     category: 'Media'
 },
 
-    // Fun 
-    'imagine': {
-        description: 'Generate an AI image from a prompt',
-        usage: 'imagine <prompt>',
-        category: 'Fun'
-    },
-    'echo': {
-        description: 'Echo back your message',
-        usage: 'echo <text>',
-        category: 'Fun'
-    },
-    'quote': {
-        description: 'Get a random inspirational quote',
-        usage: 'quote',
-        category: 'Fun'
-    },
-    'joke': {
-        description: 'Get a random joke',
-        usage: 'joke',
-        category: 'Fun'
-    },
-    'translate': {
-        description: 'Translate text to another language',
-        usage: 'translate <lang_code> <text>',
-        category: 'Fun'
-    },
-    // Fun action commands (GIFs)
-    'slap': { description: 'Slap someone with a GIF', usage: 'slap [@user]', category: 'Fun' },
-    'hug': { description: 'Hug someone with a GIF', usage: 'hug [@user]', category: 'Fun' },
-    'kick': { description: 'Kick someone with a GIF', usage: 'kick [@user]', category: 'Fun' },
-    'poke': { description: 'Poke someone with a GIF', usage: 'poke [@user]', category: 'Fun' },
-    'tickle': { description: 'Tickle someone with a GIF', usage: 'tickle [@user]', category: 'Fun' },
-    'cry': { description: 'Show a crying GIF', usage: 'cry', category: 'Fun' },
-    'pat': { description: 'Pat someone with a GIF', usage: 'pat [@user]', category: 'Fun' },
-    'kiss': { description: 'Kiss someone with a GIF', usage: 'kiss [@user]', category: 'Fun' },
-    'wave': { description: 'Wave with a GIF', usage: 'wave', category: 'Fun' },
-    'blush': { description: 'Show a blushing GIF', usage: 'blush', category: 'Fun' },
-    'shrug': { description: 'Shrug with a GIF', usage: 'shrug', category: 'Fun' },
-    'smile': { description: 'Show a smiling GIF', usage: 'smile', category: 'Fun' },
-    'laugh': { description: 'Show a laughing GIF', usage: 'laugh', category: 'Fun' },
-    'lick': { description: 'Lick someone with a GIF', usage: 'lick [@user]', category: 'Fun' },
-    'bored': { description: 'Show a bored GIF', usage: 'bored', category: 'Fun' },
-    'stare': { description: 'Stare with a GIF', usage: 'stare [@user]', category: 'Fun' },
-    'yeet': { description: 'Yeet with a GIF', usage: 'yeet [@user]', category: 'Fun' },
-    'feed': { description: 'Feed someone with a GIF', usage: 'feed [@user]', category: 'Fun' },
-    'dance': { description: 'Show a dancing GIF', usage: 'dance', category: 'Fun' },
-    'cuddle': { description: 'Cuddle with someone with a GIF', usage: 'cuddle [@user]', category: 'Fun' },
-    'highfive': { description: 'High five with a GIF', usage: 'highfive [@user]', category: 'Fun' },
-    'facepalm': { description: 'Show a facepalm GIF', usage: 'facepalm', category: 'Fun' },
-    'thumbsup': { description: 'Show a thumbs up GIF', usage: 'thumbsup', category: 'Fun' },
-    'think': { description: 'Show a thinking GIF', usage: 'think', category: 'Fun' },
-    'shoot': { description: 'Shoot with a GIF', usage: 'shoot [@user]', category: 'Fun' },
-    'pout': { description: 'Show a pouting GIF', usage: 'pout', category: 'Fun' },
-    'bite': { description: 'Bite someone with a GIF', usage: 'bite [@user]', category: 'Fun' },
-    'smug': { description: 'Show a smug GIF', usage: 'smug', category: 'Fun' },
-    'baka': { description: 'Call someone baka with a GIF', usage: 'baka [@user]', category: 'Fun' },
+
 
 };
 

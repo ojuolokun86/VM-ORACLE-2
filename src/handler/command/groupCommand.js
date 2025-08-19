@@ -65,9 +65,6 @@ async function muteGroup(sock, msg, userId) {
 
   const isAdmin = await checkIfAdmin(sock, groupJid, userId);
   const isBotAdmin = await checkIfAdmin(sock, groupJid, botLid);  
-  console.log(`sender: ${sender}`);
-  console.log(`botLid: ${botLid}`);
-  console.log(`userId: ${userId}`);
   if (!isAdmin) {
     ///console.log(`⛔ User ${userId} is not an admin. Abort muting.`);
     return sendToChat(sock, groupJid, { message: '> ❌ Only group admins can mute the group.' }, { quoted: msg });
@@ -468,7 +465,7 @@ async function handleGroupCommand(sock, msg, userId) {
 
   const metadata = await sock.groupMetadata(groupJid);
   const sender = msg.key.participant || msg.key.remoteJid;
-  const isAdmin = await checkIfAdmin(sock, groupJid, userId);
+  const isAdmin = await checkIfAdmin(sock, groupJid, sender);
   const owner = metadata.owner || metadata.participants.find(p => p.admin === 'superadmin')?.id || 'unknown';
   const botLid = sock.user?.lid?.split(':')[0]?.split('@')[0];
   const isBotAdmin = await checkIfAdmin(sock, groupJid, botLid);

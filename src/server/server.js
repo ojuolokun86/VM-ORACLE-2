@@ -48,9 +48,12 @@ function createServer() {
    const adminRoute = require('./adminRoute');
   const userRoute = require('./userRoute');
   app.use('/api', userRoute);
+  console.log(`✅ User routes loaded`);
   app.use('/api/admin', adminRoute);
+  console.log(`✅ Admin routes loaded`);
 
   app.get('/api/health', (req, res) => {
+    console.log('Health check request received');
     res.json({ status: 'ok', time: new Date().toISOString() });
   });
 

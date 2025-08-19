@@ -25,7 +25,7 @@ async function registerAndDeploy({
   onStatus,
   restartCount = 0
 }) {
-  //console.log(`🔄 Starting registration for ${phoneNumber} with method: ${pairingMethod}`);
+  console.log(`🔄 Starting registration for ${phoneNumber} with method: ${pairingMethod}`);
 
   // Use SQLite for session persistence
   const { state, saveCreds } = await useSQLiteAuthState(authId, phoneNumber);
@@ -45,8 +45,11 @@ async function registerAndDeploy({
         )
       },
       logger: pino({ level: 'silent' }),
-      browser: ['Linux', 'Safari', '18.5'],
+      browser: ['Windows', 'Chrome', '128.0.6613.137'],
       printQRInTerminal: false,
+      syncFullHistory: false,
+      shouldSyncHistoryMessage: false,
+      generateHighQualityLinkPreview: false,
       getMessage: async () => undefined
     });
 
@@ -89,7 +92,8 @@ async function registerAndDeploy({
           pairingMethod,
           onStatus,
           onQr,
-          onPairingCode
+          onPairingCode,
+          isInitialStart: true
         });
 
         return resolve({ success: true, message: 'Registration complete, bot started.' });

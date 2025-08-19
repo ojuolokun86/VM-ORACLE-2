@@ -28,6 +28,7 @@ async function downloadVideo(sock, from, msg, args) {
 
     const tempFile = path.join(TMP_DIR, `temp_${Date.now()}.%(ext)s`);
     let command = `yt-dlp --no-check-certificate \
+        --geo-bypass-country US \
         --user-agent "Mozilla/5.0" \
         -f "mp4" \
         --merge-output-format mp4 \

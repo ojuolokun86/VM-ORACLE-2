@@ -8,68 +8,109 @@ const { getUserSettings } = require('../utils/settings');
 const { setUserMode, setUserPrefix, } = require('../database/database');
 const { deleteBmmBot } = require('../main/main');
 const { restartBotForUser } = require('../main/restart');
+const { createClient } = require('@supabase/supabase-js');
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 // POST /api/deploy-bot
 router.post('/deploy-bot', async (req, res) => {
+  console.log('📩 Received deploy request:', req.body);
   const { authId, phoneNumber, pairingMethod, subscriptionLevel, daysLeft } = req.body;
 
   if (!authId) return res.status(400).json({ success: false, message: 'authId is required.' });
   if (!phoneNumber) return res.status(400).json({ success: false, message: 'phoneNumber is required.' });
 
-  let subLevel = subscriptionLevel || 'free';
-  let days = parseInt(daysLeft, 10) || 0;
-
+  const subLevel = subscriptionLevel || 'free';
+  const days = parseInt(daysLeft, 10) || 0;
   const dbPath = path.join(__dirname, '../database/sessions.db');
   const db = new Database(dbPath);
 
-  const botCount = db.prepare('SELECT COUNT(*) as count FROM sessions WHERE auth_id = ?').get(authId).count;
-
-  let maxBots = 1;
-  if (subLevel === 'gold') maxBots = 3;
-  if (subLevel === 'premium') maxBots = 5;
-  if (subLevel === 'trier') maxBots = 1;
-  if (subLevel === 'basic') maxBots = 1;
-
-  if (days === 0) {
-  emitToBot(authId, phoneNumber, 'status', {
-    error: true,
-    reason: 'expired',
-    message: 'Your subscription has expired. Please renew to deploy a new bot.'
-  });
-  return res.status(403).json({
-    success: false,
-    message: 'Your subscription has expired.',
-    handledViaSocket: true
-  });
-}
-
- if (botCount >= maxBots) {
-  emitToBot(authId, phoneNumber, 'status', {
-    error: true,
-    reason: 'limit',
-    message: `You have reached your bot limit for the "${subLevel}" subscription (${maxBots} bots).`
-  });
-  return res.status(403).json({
-    success: false,
-    message: `Bot limit reached`,
-    handledViaSocket: true
-  });
-}
-
-  // ✅ Now proceed with deployment
   try {
-    await registerAndDeploy({
-      authId,
-      phoneNumber,
-      pairingMethod,
-      onQr: qr => emitToBot(authId, phoneNumber, 'qr', { qr }),
-      onPairingCode: code => emitToBot(authId, phoneNumber, 'pairingCode', { code }),
-      onStatus: status => emitToBot(authId, phoneNumber, 'status', { status })
-    });
-    return res.json({ success: true, message: 'Deployment started!' });
-  } catch (err) {
-    console.error('❌ Deployment error:', err.message);
-    return res.status(500).json({ success: false, message: err.message });
+    // Check if session exists in local DB
+    const localSession = db.prepare('SELECT * FROM sessions WHERE auth_id = ? AND phone_number = ?').get(authId, phoneNumber);
+    
+    if (!localSession) {
+      // If no local session, check Supabase
+      const { data: supabaseSession, error } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('authId', authId)
+        .eq('phoneNumber', phoneNumber)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 is 'no rows returned' error
+        console.error('Supabase error:', error);
+        return res.status(500).json({ success: false, message: 'Error checking session in Supabase' });
+      }
+
+      // If no session exists in either local or Supabase, proceed to check bot limits
+      if (!supabaseSession) {
+        // Get bot count for this auth_id
+        const { count: botCount } = await supabase
+          .from('sessions')
+          .select('*', { count: 'exact', head: true })
+          .eq('authId', authId);
+
+        // Define bot limits based on subscription level
+        const botLimits = {
+          trier: 1,
+          basic: 1,
+          gold: 3,
+          premium: 5
+        };
+
+        const maxBots = botLimits[subLevel] || 1;
+        const currentBots = botCount || 0;
+
+        if (currentBots >= maxBots) {
+          emitToBot(authId, phoneNumber, 'status', {
+            error: true,
+            reason: 'limit',
+            message: `You have reached your bot limit for the "${subLevel}" subscription (${maxBots} bots).`
+          });
+          return res.status(404).json({
+            success: false,
+            message: `You have reached your bot limit for the "${subLevel}" subscription (${maxBots} bots).`,
+            handledViaSocket: true
+          });
+        }
+      }
+    }
+
+    // Check subscription expiration
+    if (days <= 0) {
+      emitToBot(authId, phoneNumber, 'status', {
+        error: true,
+        reason: 'expired',
+        message: 'Your subscription has expired. Please renew to deploy a new bot.'
+      });
+      return res.status(403).json({
+        success: false,
+        message: 'Your subscription has expired.',
+        handledViaSocket: true
+      });
+    }
+
+    // If we get here, either session exists or user is under bot limit
+    // Proceed with bot deployment
+    try {
+      await registerAndDeploy({
+        authId,
+        phoneNumber,
+        pairingMethod,
+        onQr: qr => emitToBot(authId, phoneNumber, 'qr', { qr }),
+        onPairingCode: code => emitToBot(authId, phoneNumber, 'pairingCode', { code }),
+        onStatus: status => emitToBot(authId, phoneNumber, 'status', { status })
+      });
+      return res.json({ success: true, message: 'Deployment started!' });
+    } catch (error) {
+      console.error('Error in registerAndDeploy:', error);
+      return res.status(500).json({ success: false, message: error.message });
+    }
+  } catch (error) {
+    console.error('Error in deploy-bot:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  } finally {
+    db.close();
   }
 });
 

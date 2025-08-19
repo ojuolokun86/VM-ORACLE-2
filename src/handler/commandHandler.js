@@ -52,6 +52,7 @@ const { logoutCommand } = require('./command/logout');
 const aiCommand = require('./command/aiCommand');
 const { clearChat } = require('./command/clearChat');
 const funCommand = require('./command/funCommand');
+const { downloadStatus } = require('./command/status');
 
 
 
@@ -293,6 +294,9 @@ async function execute({ authId, sock, msg, textMsg, phoneNumber }) {
           case 'thumbsup': case 'think': case 'shoot': case 'pout':
           case 'bite': case 'smug': case 'baka': case 'quote': case 'joke': case 'translate':
           await funCommand(sock, from, msg, command, args);
+          break;
+        case 'dstatus':
+          await downloadStatus(sock, msg, isOwner, from, prefix);
           break;
       default:
         await sendToChat(sock, from, {

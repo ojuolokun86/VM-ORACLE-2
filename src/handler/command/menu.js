@@ -47,7 +47,34 @@ const getMainMenu = (
 > poll → Create a poll
 > group link → Fetch invite link
 > group stats → Display group stats
+> group revoke → Revoke group invite link
+> group info → See group details
+> group desc <text> → Set group description
+> group pic → Reply to image to set group picture
 > listinactive → View inactive members
+
+📁 *MEDIA*
+> ss → Take screenshot of a webpage
+> imagine → Generate AI image
+> song → Download audio
+> play → Play music
+> video → Download video
+> dstatus → Download a status by replying to it
+
+🔧 *UTILITIES*
+> status → View system uptime
+> vv → View once media
+> view → Send View once to your DM
+> online → Show online members
+> setprofile → Update profile
+> report → Send a report
+
+🤖 *AI* 
+> ai → Chat with AI
+> gpt → Chat with GPT
+> llama → Chat with Meta Llama AI
+> mistral → Chat with Mistral AI
+> deepseek → Chat with DeepSeek V3 AI
 
 🎨 *FUN*
 > sticker → Convert image/video to sticker
@@ -85,28 +112,6 @@ const getMainMenu = (
 > smug → smug at someone
 > baka → baka at someone
 > translate → Translate text
-
-📁 *MEDIA*
-> ss → Take screenshot of a webpage
-> imagine → Generate AI image
-> song → Download audio
-> play → Play music
-> video → Download video
-
-🔧 *UTILITIES*
-> status → View system uptime
-> vv → View once media
-> view → View profile info
-> online → Show online members
-> setprofile → Update profile
-> report → Send a report
-
-🤖 *AI* 
-> ai → Chat with AI
-> gpt → Chat with GPT
-> llama → Chat with Meta Llama AI
-> mistral → Chat with Mistral AI
-> deepseek → Chat with DeepSeek V3 AI
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 🖥️ *EXECUTION MODE*: Reply with a command to run.

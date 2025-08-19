@@ -77,7 +77,7 @@ async function playCommand(sock, chatId, message) {
             audio: { url: audioUrl },
             mimetype: "audio/mpeg",
             fileName: `${title}.mp3`,
-            caption: `🎶 *${title}*\n\nPowered by KNIGHT-BOT`
+            caption: `🎶 *${title}*\n\nPowered by BMM`
         }, { quoted: message });
 
     } catch (error) {

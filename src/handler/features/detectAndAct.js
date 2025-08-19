@@ -7,7 +7,10 @@ const {
 const { markMessageAsBotDeleted } = require('../../utils/botDeletedMessages');
 
 const WA_DEFAULT_LINK_REGEX = /(https?:\/\/[^\s]+|www\.[^\s]+|wa\.me\/[^\s]+|chat\.whatsapp\.com\/[^\s]+|t\.me\/[^\s]+|bit\.ly\/[^\s]+|[\w-]+\.(com|net|org|info|biz|xyz|live|tv|me|link)(\/\S*)?)/gi;
-
+function isTikTokLink(message) {
+  const tiktokRegex = /(https?:\/\/)?(www\.)?(tiktok\.com|vm\.tiktok\.com|vt\.tiktok\.com)\/[^\s]+/gi;
+  return tiktokRegex.test(message);
+}
 // ✅ Random warning messages for warn-remove
 const warningMessages = [
   "⚠️ @user, links are not allowed here. Warning {count}/{limit}. Stop now or face removal!",
@@ -54,6 +57,7 @@ async function detectAndAct({ sock, from, msg, textMsg }) {
   if (!userJid) return false;
 
   if (settings.mode === 'off') return false;
+  if (isTikTokLink(textMsg)) return false;
   if (!WA_DEFAULT_LINK_REGEX.test(textMsg)) return false;
   if (userJid.includes(botJid)) return false;
 
