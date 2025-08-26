@@ -3,7 +3,7 @@ const { setAntilinkSettings, getAntilinkSettings } = require('../../database/ant
 const { isBotOwner } = require('../../database/database');
 const { checkIfAdmin } = require('../command/groupCommand');
 const menu = (settings) => 
-`🛡️ [Antilink Security Module]
+`🛡️ [*Antilink Security Module*]
   
 🖥️ [CONFIGURATION]
 > • Warn Limit: ${settings.warnLimit || 2}
@@ -20,6 +20,16 @@ const menu = (settings) =>
   
 *Action Required: Reply with a number to execute command.*`;
   
+async function isGroupAdmin(sock, chatId, userId) {
+  try {
+      const metadata = await sock.groupMetadata(chatId);
+      const participant = metadata.participants.find(p => p.id === userId);
+      return participant && (participant.admin === 'admin' || participant.admin === 'superadmin');
+  } catch (error) {
+      console.error('Error checking admin status:', error);
+      return false;
+  }
+}
 
 
 async function handleAntilinkCommand(sock, msg, phoneNumber) {
@@ -32,7 +42,7 @@ async function handleAntilinkCommand(sock, msg, phoneNumber) {
    if (!groupId || !groupId.endsWith('@g.us')) {
       return sendToChat(sock, groupId, { message: '> ❌ This command only works in groups.' }, { quoted: msg });
     }
-    const isBotAdmin = await checkIfAdmin(sock, groupId, botLid); 
+    const isBotAdmin = await isGroupAdmin(sock, groupId, sender); 
     if (!isBotAdmin) {
       return sendToChat(sock, groupId, { message: '> ❌ I need to be an admin to activate antilink.' }, { quoted: msg });
     }

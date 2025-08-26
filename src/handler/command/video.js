@@ -1,112 +1,90 @@
-const { exec } = require('child_process');
+const ytdlp = require('yt-dlp-exec');
+const ffmpegPath = require('ffmpeg-static');
 const fs = require('fs');
 const path = require('path');
-const { promisify } = require('util');
-const execAsync = promisify(exec);
 
-const MAX_VIDEO_SIZE_MB = 1120; // WhatsApp limit
-const TMP_DIR = path.join(__dirname, '../../tmp');
+const TMP_DIR = path.join(__dirname, '../../../temp/multidl');
+const INLINE_LIMIT = 60 * 1024 * 1024; // 60MB -> send inline; larger -> send as document
 
 if (!fs.existsSync(TMP_DIR)) {
     fs.mkdirSync(TMP_DIR, { recursive: true });
 }
 
-async function downloadVideo(sock, from, msg, args) {
-    console.log('[video] Command started');
+const safeName = (s) => (s || '').replace(/[^\w\s.-]/g, '').trim() || `video_${Date.now()}`;
 
+async function downloadFileWithYtDlp(url) {
+    const outPath = path.join(TMP_DIR, `${safeName('dl')}_${Date.now()}.mp4`);
+
+    await ytdlp(url, {
+        output: outPath,
+        format: 'bv*+ba/b',           // best video+audio, else best single stream
+        mergeOutputFormat: 'mp4',      // ensure mp4
+        ffmpegLocation: ffmpegPath || undefined,
+        noCheckCertificates: true,
+        userAgent: 'Mozilla/5.0',
+        noPlaylist: true
+    });
+
+    const stat = fs.statSync(outPath);
+    return { path: outPath, size: stat.size };
+}
+
+async function downloadVideo(sock, from, msg, args) {
     const url = args[0];
     if (!url) {
-        return await sock.sendMessage(from, { text: '❌ Please provide a video URL.\nExample: .video https://youtube.com/...' });
+        return await sock.sendMessage(from, { text: '❌ Please provide a video URL.\nExample: .video https://www.instagram.com/...' }, { quoted: msg });
     }
 
     // Validate URL
-    try {
-        new URL(url);
-    } catch (e) {
-        return await sock.sendMessage(from, { text: '❌ Invalid URL. Please provide a valid video URL.' });
+    try { new URL(url); } catch {
+        return await sock.sendMessage(from, { text: '❌ Invalid URL. Please provide a valid video URL.' }, { quoted: msg });
     }
 
-    const tempFile = path.join(TMP_DIR, `temp_${Date.now()}.%(ext)s`);
-    let command = `yt-dlp --no-check-certificate \
-        --geo-bypass-country US \
-        --user-agent "Mozilla/5.0" \
-        -f "mp4" \
-        --merge-output-format mp4 \
-        --no-playlist \
-        -o "${tempFile}" \
-        "${url}"`;
+    await sock.sendMessage(from, {
+        text: '⏳ Downloading... This may take a moment.',
+        mentions: [msg.key.participant || msg.key.remoteJid]
+    }, { quoted: msg });
 
-    //console.log(`[video] Starting download: ${url}`);
-
+    let fileInfo;
     try {
-        await sock.sendMessage(from, {
-            text: '⏳ *Downloading video...*\nPlease wait...',
-            mentions: [msg.key.participant || msg.key.remoteJid]
-        });
+        fileInfo = await downloadFileWithYtDlp(url);
 
-        // Run yt-dlp command
-        const { stdout, stderr } = await execAsync(command);
-        //console.log('[video] yt-dlp output:', stdout || stderr);
+        const buffer = fs.readFileSync(fileInfo.path);
+        const fileSizeMB = (fileInfo.size / (1024 * 1024)).toFixed(2);
+        const fileName = `video_${Date.now()}.mp4`;
 
-        // Find downloaded .mp4 file
-        const downloadedFiles = fs.readdirSync(TMP_DIR).filter(file => file.startsWith('temp_') && file.endsWith('.mp4'));
-        if (downloadedFiles.length === 0) {
-            throw new Error('Download failed: No MP4 file was created');
+        if (fileInfo.size > INLINE_LIMIT) {
+            await sock.sendMessage(from, {
+                document: buffer,
+                mimetype: 'video/mp4',
+                fileName,
+                caption: `📦 Sent as document due to large size\n📏 ${fileSizeMB} MB`
+            }, { quoted: msg });
+        } else {
+            await sock.sendMessage(from, {
+                video: buffer,
+                mimetype: 'video/mp4',
+                fileName,
+                caption: `🎥 Downloaded\n📏 ${fileSizeMB} MB`,
+                gifPlayback: false,
+                mentions: [msg.key.participant || msg.key.remoteJid]
+            }, { quoted: msg });
         }
-        const actualFile = path.join(TMP_DIR, downloadedFiles[0]);
-
-        // Check size
-        let stats = fs.statSync(actualFile);
-        let fileSizeMB = stats.size / (1024 * 1024);
-
-        // If too large, retry with lower quality
-        if (fileSizeMB > MAX_VIDEO_SIZE_MB) {
-            //console.log(`[video] File too large (${fileSizeMB.toFixed(2)}MB). Retrying with lower quality...`);
-            fs.unlinkSync(actualFile);
-
-            const lowQualityCmd = `yt-dlp --no-check-certificate \
-                --user-agent "Mozilla/5.0" \
-                -f "best[ext=mp4][height<=480]" \
-                --merge-output-format mp4 \
-                --no-playlist \
-                -o "${tempFile}" \
-                "${url}"`;
-
-            const { stdout: lowOut, stderr: lowErr } = await execAsync(lowQualityCmd);
-            //console.log('[video] Low quality yt-dlp output:', lowOut || lowErr);
-
-            const newFiles = fs.readdirSync(TMP_DIR).filter(file => file.startsWith('temp_') && file.endsWith('.mp4'));
-            if (newFiles.length === 0) throw new Error('Failed even after retrying with low quality');
-
-            const newActualFile = path.join(TMP_DIR, newFiles[0]);
-            stats = fs.statSync(newActualFile);
-            fileSizeMB = stats.size / (1024 * 1024);
-        }
-
-        const videoBuffer = fs.readFileSync(actualFile);
-
-        await sock.sendMessage(from, {
-            video: videoBuffer,
-            mimetype: 'video/mp4',
-            caption: `⬇️ *Downloaded by BMM-BOT*\n📏 Size: ${fileSizeMB.toFixed(2)}MB`,
-            fileName: `video_${Date.now()}.mp4`,
-            gifPlayback: false,
-            mentions: [msg.key.participant || msg.key.remoteJid]
-        }, { quoted: msg });
-
-        //console.log('[video] Video sent successfully');
     } catch (error) {
         console.error('[video] Error:', error);
         await sock.sendMessage(from, {
             text: '❌ Failed to download video. ' + (error.message || 'Please try again later.'),
             mentions: [msg.key.participant || msg.key.remoteJid]
-        });
+        }, { quoted: msg });
     } finally {
-        // Clean up temp files
+        // Clean up temp files from this run
         try {
             const files = fs.readdirSync(TMP_DIR);
             files.forEach(file => {
-                if (file.startsWith('temp_')) fs.unlinkSync(path.join(TMP_DIR, file));
+                if (file.startsWith('dl_') || file.startsWith('video_') || file.startsWith('temp_') || file.endsWith('.mp4')) {
+                    const fp = path.join(TMP_DIR, file);
+                    try { fs.unlinkSync(fp); } catch {}
+                }
             });
         } catch (cleanupError) {
             console.error('[video] Cleanup error:', cleanupError);

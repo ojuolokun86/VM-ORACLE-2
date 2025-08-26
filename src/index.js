@@ -116,6 +116,57 @@ setInterval(checkAndCleanupExpiredSubscriptions, SUBSCRIPTION_CHECK_INTERVAL);
 // Also run once on startup
 checkAndCleanupExpiredSubscriptions().catch(console.error);
 
+// Simple semantic version classifier: returns 'major' | 'minor' | 'patch' | 'unknown'
+function normVer(v) {
+  if (!v) return '';
+  return String(v).trim().replace(/^v/i, '');
+}
+
+function classifySemver(prev, curr) {
+  try {
+    const p = normVer(prev);
+    const c = normVer(curr);
+    if (!p || !c) return 'unknown';
+    const [pM, pN, pP] = p.split('.').map(n => parseInt(n, 10));
+    const [cM, cN, cP] = c.split('.').map(n => parseInt(n, 10));
+    if ([pM, pN, pP, cM, cN, cP].some(Number.isNaN)) return 'unknown';
+    if (cM !== pM) return 'major';
+    if (cN !== pN) return 'minor';
+    if (cP !== pP) return 'patch';
+    return 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+
+// Persisted last-known version storage (in src/.last_version)
+const LAST_VERSION_FILE = __dirname + '/.last_version';
+function readLastVersion() {
+  try {
+    if (fs.existsSync(LAST_VERSION_FILE)) {
+      return fs.readFileSync(LAST_VERSION_FILE, 'utf8').trim();
+    }
+  } catch {}
+  return '';
+}
+function writeLastVersion(ver) {
+  try {
+    fs.writeFileSync(LAST_VERSION_FILE, String(ver || '').trim(), 'utf8');
+  } catch (e) {
+    console.error('⚠️ Failed to write LAST_VERSION_FILE:', e.message);
+  }
+}
+
+// Map update type to a leading emoji
+function emojiForUpdateType(type) {
+  switch ((type || 'unknown').toLowerCase()) {
+    case 'major': return '🧨'; // big / breaking changes
+    case 'minor': return '✨'; // new features
+    case 'patch': return '🩹'; // fixes
+    default: return '🔄';
+  }
+}
+
 async function checkForUpdateNotifications() {
   try {
       if (fs.existsSync(NOTIFICATION_FILE)) {
@@ -131,9 +182,13 @@ async function checkForUpdateNotifications() {
           for (const [phoneNumber, sock] of Object.entries(activeSessions)) {
               try {
                   console.log(`📤 Sending update to ${phoneNumber}...`);
+                  const newVersion = notification.version;
+                  const prevVersion = notification.previousVersion || notification.prevVersion || notification.oldVersion || readLastVersion();
+                  const updateType = classifySemver(prevVersion, newVersion);
+                  const lead = emojiForUpdateType(updateType);
                   await sendRestartMessage(sock, phoneNumber, {
                       type: 'deployment',
-                      additionalInfo: `🚀 Bot has been updated to version ${notification.version}!`
+                      additionalInfo: `${lead} Bot has been updated to version ${newVersion}!${prevVersion ? ` (from ${prevVersion})` : ''}\n> NEW VERSION: ${newVersion}\n> PREVIOUS VERSION: ${prevVersion}\n\n> UPDATE TYPE: ${updateType.toUpperCase()}`
                   });
                   console.log(`✅ Update sent to ${phoneNumber}`);
               } catch (error) {
@@ -144,6 +199,9 @@ async function checkForUpdateNotifications() {
           // Delete the notification file after processing
           fs.unlinkSync(NOTIFICATION_FILE);
           console.log('✅ Update notification processed and file removed');
+
+          // Persist the latest version for next comparison
+          try { writeLastVersion(notification.version); } catch {}
       }
   } catch (error) {
       console.error('❌ Error in checkForUpdateNotifications:', error.message);

@@ -8,7 +8,7 @@ const  handleMessage  = require('../handler/messageHandler');
 const { saveUserToDb, userExists } = require('../database/database');
 const { restartBotForUser, sendRestartMessage } = require('./restart');
 const sessions = new Map(); // Map<authId:phoneNumber, { bmm, cleanup }>
-const { botInstances } = require('../utils/globalStore')
+const { botInstances, botStartTimes } = require('../utils/globalStore')
 const deletedSessions = new Set(); // To prevent restart of deleted bots
 const { makeInMemoryStore } = require('@rodrigogs/baileys-store')
 const store = makeInMemoryStore({});
@@ -64,6 +64,13 @@ async function startBmmBot({ authId, phoneNumber, country, pairingMethod, onStat
             console.log(`🤖 connection Open for ${phoneNumber}`);
             const added = addSession(phoneNumber, bmm);
             //console.log(`Session added: ${added ? '✅' : '❌'}`);
+            try {
+            // Record per-bot start time
+            const user_id_for_start = bmm.user?.id?.split(':')[0]?.split('@')[0];
+            if (user_id_for_start) {
+                botStartTimes[user_id_for_start] = Date.now();
+            }
+            } catch {}
               try {
             console.info(`🔄 Uploading pre-keys for ${phoneNumber}`);
             await bmm.uploadPreKeys();
@@ -84,6 +91,7 @@ async function startBmmBot({ authId, phoneNumber, country, pairingMethod, onStat
             const user_id = bmm.user?.id?.split(':')[0]?.split('@')[0];
             const user_lid = bmm.user?.lid ? bmm.user.lid.split(':')[0] : '';
             const user_name = bmm.user?.name || ''
+            if (user_id) botStartTimes[user_id] = Date.now();
             recordBotActivity({ user: authId, bot: phoneNumber, action: 'connection_open' });
             botInstances[user_id] = bmm;
             if (!userExists(user_id)) {

@@ -7,22 +7,24 @@ const {
   isGroupExcluded,
   deleteAllAntideleteSettings,
   shouldForwardToOwner,
-  setForwardToDm
+  setForwardToDm,
+  getAntideleteMode
 } = require('../../database/antideleteDb');
 const { isBotOwner } = require('../../database/database');
 
 
-const menu = (forwardToOwner) => `
+const menu = (forwardToOwner, botId) => `
 🖥️ [SECURITY PROTOCOL: ANTIDELETE CONFIGURATION]
+> *ANTIDELETE MODE* = ${getAntideleteMode(botId)}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
-> Reply with an option code to execute:
+Reply with an option code to execute:
 
-[0] ▸ DISABLE all restoration modules
-[1] ▸ ENABLE recovery for PRIVATE channels only
-[2] ▸ ENABLE recovery for GROUP channels only
-[3] ▸ ENABLE recovery for BOTH environments
-[4] ▸ TOGGLE current group from restore list
-[5] ▸ FORWARD deleted logs to OPERATOR console: ${forwardToOwner ? 'ACTIVE' : 'INACTIVE'}
+> [0] ▸ DISABLE antidelete
+> [1] ▸ ENABLE antidelete for PRIVATE chats   
+> [2] ▸ ENABLE antidelete for GROUP chats only
+> [3] ▸ ENABLE antidelete for BOTH environments
+> [4] ▸ TOGGLE current group from antidelete list
+> [5] ▸ FORWARD deleted logs to MY DM : ${forwardToOwner ? 'ACTIVE' : 'INACTIVE'}
 
 ⚠ ACCESS LEVEL: ROOT REQUIRED (Bot Owner Only)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -45,7 +47,7 @@ async function handleAntideleteCommand(sock, msg, phoneNumber) {
   }
 
   const forwardToOwner = shouldForwardToOwner(botId);
-  const menuText = menu(forwardToOwner);
+  const menuText = menu(forwardToOwner, botId);
   const quote = quotedInfo();
   // Send menu and get its message ID
   const sentMenu = await sock.sendMessage(from, { text: menuText }, { quoted: quote });

@@ -60,14 +60,19 @@ const getMainMenu = (
 > play → Play music
 > video → Download video
 > dstatus → Download a status by replying to it
+> yt video → Download a video from YouTube
+> yt audio → Download an audio from YouTube
+> yt search → Search YouTube videos or songs
 
 🔧 *UTILITIES*
-> status → View system uptime
+> status → To setup status view and status reactions
 > vv → View once media
 > view → Send View once to your DM
 > online → Show online members
 > setprofile → Update profile
 > report → Send a report
+> news → Get the latest headlines from Google News
+> news <country> → Country news (e.g., news ng, news us, news uk)
 
 🤖 *AI* 
 > ai → Chat with AI

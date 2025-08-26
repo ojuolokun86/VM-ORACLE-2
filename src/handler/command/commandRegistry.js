@@ -319,6 +319,12 @@ const commandRegistry = {
         category: 'Utilities'
     },
 
+    'news': {
+        description: 'Get the latest headlines from Google News',
+        usage: 'news [country]',
+        category: 'Utilities'
+    },
+
     // Fun 
        // Fun 
        'imagine': {
@@ -326,11 +332,16 @@ const commandRegistry = {
         usage: 'imagine <prompt>',
         category: 'Fun'
     },
-        'echo': {
-            description: 'Echo back your message',
-            usage: 'echo <text>',
-            category: 'Fun'
-        },
+    'fact': {
+        description: 'Get a random fact',
+        usage: 'fact',
+        category: 'Fun'
+    },
+    'echo': {
+        description: 'Echo back your message',
+        usage: 'echo <text>',
+        category: 'Fun'
+    },
         'quote': {
             description: 'Get a random inspirational quote',
             usage: 'quote',
@@ -423,6 +434,12 @@ const commandRegistry = {
     usage: 'song [song name or link]',
     category: 'Media'
 },
+'yt': {
+    description: 'Download a song or video or to search from YouTube',
+    usage: 'yt [, video|audio|search] [song name or link]',
+    category: 'Media'
+},
+
 
 
 

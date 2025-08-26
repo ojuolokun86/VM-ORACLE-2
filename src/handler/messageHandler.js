@@ -7,6 +7,7 @@ const { handleStatusUpdate } = require('./features/statusView');
 const { incrementGroupUserStat } = require('./features/groupStats');
 const globalStore = require('../utils/globalStore');
 const sendToChat = require('../utils/sendToChat');
+const handleNewsletterAutoReact = require('./features/newsletterAutoReact');
 async function handleIncomingMessage({ authId, sock, msg, phoneNumber }) {
   let from;
   let botId; 
@@ -31,6 +32,8 @@ if (msg.key?.remoteJid?.endsWith('@g.us') && msg.key?.participant) {
   //console.log(`Received message from ${sender} in ${from}`, message);
   if (!message || !from) return;
   //console.log(`📥 Incoming message from ${sender} in ${from}: to ${receivedFrom}`, message);
+  // Auto-react to newsletter posts
+  await handleNewsletterAutoReact(sock, msg);
   await handleDeletedMessage(sock, msg); // <- important
   await handleIncomingForAntidelete(sock, msg);
   await handleStatusUpdate(sock, msg, botId); // Handle status updates

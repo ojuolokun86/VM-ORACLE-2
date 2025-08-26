@@ -13,6 +13,54 @@ function getTargetUser(msg, args) {
     return null;
 }
 
+// ✅ Deep quotes fallback list (philosophy, wisdom, life)
+const DEEP_QUOTES = [
+    { content: 'He who has a why to live can bear almost any how.', author: 'Friedrich Nietzsche' },
+    { content: 'The unexamined life is not worth living.', author: 'Socrates' },
+    { content: 'We suffer more often in imagination than in reality.', author: 'Seneca' },
+    { content: 'Man is not worried by real problems so much as by his imagined anxieties about real problems.', author: 'Epictetus' },
+    { content: 'In the midst of chaos, there is also opportunity.', author: 'Sun Tzu' },
+    { content: 'It is not that we have a short time to live, but that we waste a lot of it.', author: 'Seneca' },
+    { content: 'You must become who you are.', author: 'Friedrich Nietzsche' },
+    { content: 'Happiness and freedom begin with a clear understanding of one principle: some things are within our control, and some things are not.', author: 'Epictetus' },
+    { content: 'To be yourself in a world that is constantly trying to make you something else is the greatest accomplishment.', author: 'Ralph Waldo Emerson' },
+    { content: 'We are what we repeatedly do. Excellence, then, is not an act, but a habit.', author: 'Aristotle' }
+];
+
+function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+// ✅ Robust deep quote fetcher with fallbacks and timeouts
+async function getDeepQuote() {
+    // 1) Primary: Quotable (deeper tags, min length)
+    try {
+        const res = await axios.get('https://api.quotable.io/quotes/random', {
+            params: { tags: 'wisdom|philosophy|life', minLength: 80 },
+            timeout: 6000,
+            validateStatus: s => s >= 200 && s < 300
+        });
+        const q = Array.isArray(res.data) ? res.data[0] : res.data;
+        const content = q?.content || q?.quote;
+        if (content) return { content, author: q?.author || 'Unknown' };
+    } catch (e) {
+        // fall through
+    }
+
+    // 2) Secondary: Stoic quote API
+    try {
+        const res = await axios.get('https://api.themotivate365.com/stoic-quote', {
+            timeout: 6000,
+            validateStatus: s => s >= 200 && s < 300
+        });
+        const q = res.data || {};
+        if (q.quote) return { content: q.quote, author: q.author || 'Unknown' };
+    } catch (e) {
+        // fall through
+    }
+
+    // 3) Final: local deep quotes
+    return pickRandom(DEEP_QUOTES);
+}
+
 // ✅ Convert image to WebP (for static sticker)
 async function toWebpStickerBuffer(imageBuffer) {
     return sharp(imageBuffer)
@@ -99,10 +147,9 @@ async function funCommand(sock, from, msg, textMsg) {
 
         switch (command) {
             case 'quote': {
-                const res = await axios.get('https://zenquotes.io/api/random');
-                const data = res.data[0];
+                const q = await getDeepQuote();
                 await sendToChat(sock, from, {
-                    message: `💬 *Quote of the Moment*\n\n"${data.q}"\n\n— _${data.a}_`
+                    message: `💬 *Quote of the Moment*\n\n"${q.content}"\n\n— _${q.author}_`
                 }, { quoted: msg });
                 break;
             }
@@ -155,7 +202,7 @@ async function funCommand(sock, from, msg, textMsg) {
     } catch (err) {
         console.error('❌ Error in fun command:', err);
         await sendToChat(sock, from, {
-            message: '❌ An error occurred while processing the fun command.'
+            message: '❌ An error occurred while processing the fun command.', err
         }, { quoted: msg });
     }
 }

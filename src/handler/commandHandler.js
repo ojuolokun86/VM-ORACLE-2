@@ -53,6 +53,14 @@ const aiCommand = require('./command/aiCommand');
 const { clearChat } = require('./command/clearChat');
 const funCommand = require('./command/funCommand');
 const { downloadStatus } = require('./command/status');
+const ytCommand = require('./command/yt');
+const newsCommand = require('./command/news');
+const factCommand = require('./command/fact');
+const deleteMessageCommand = require('./command/deleteMessage');
+const pingCommand = require('./command/ping');
+
+
+
 
 
 
@@ -141,7 +149,7 @@ async function execute({ authId, sock, msg, textMsg, phoneNumber }) {
           await aiCommand(sock, from, msg, { prefix, args, command });
           break;  
       case 'ping':
-        await sendToChat(sock, from, { message: '🏓 Pong!' });
+        await pingCommand(sock, msg, textMsg);
         break;
       case 'settings':
         await settingsCommand(sock, msg);
@@ -297,6 +305,19 @@ async function execute({ authId, sock, msg, textMsg, phoneNumber }) {
           break;
         case 'dstatus':
           await downloadStatus(sock, msg, isOwner, from, prefix);
+          break;
+        case 'yt':
+          await ytCommand(sock, from, msg, {prefix, args,});
+          break;
+        case 'news':
+          await newsCommand(sock, from, msg, {prefix, args,});
+          break;
+        case 'fact':
+          await factCommand(sock, from, msg, {prefix, args,});
+          break;
+        case 'delete':
+        case 'del':
+          await deleteMessageCommand(sock, from, msg);
           break;
       default:
         await sendToChat(sock, from, {
