@@ -14,7 +14,7 @@ const { makeInMemoryStore } = require('@rodrigogs/baileys-store')
 const store = makeInMemoryStore({});
 const { recordBotActivity } = require('../database/database');
 const { addSession, removeSession } = require('../utils/sessionManager');
-
+const NodeCache = require('node-cache');
 async function startBmmBot({ authId, phoneNumber, country, pairingMethod, onStatus, onQr, onPairingCode, isInitialStart = false }) {
     recordBotActivity({ user: authId, bot: phoneNumber, action: 'starting' });
     console.log(`Starting Bmm for user ${phoneNumber} (${isInitialStart ? 'initial' : 'restart'})`);
@@ -33,7 +33,7 @@ async function startBmmBot({ authId, phoneNumber, country, pairingMethod, onStat
     const { state, saveCreds } = await useSQLiteAuthState(authId, phoneNumber);
 
     const { version } = await fetchLatestBaileysVersion();
-
+    const groupCache = new NodeCache({ stdTTL: 60 * 60, useClone: false });
     const bmm = makeWASocket({
         version,
         auth: {
@@ -52,8 +52,14 @@ async function startBmmBot({ authId, phoneNumber, country, pairingMethod, onStat
         linkPreviewImageThumbnailWidth: 1200, 
         fireInitQueries: false,         
         markOnlineOnConnect: false,   
-       getMessage: async (key) => {
-        return (await store.loadMessage?.(key.remoteJid, key.id)) || undefined;
+        groupMetadataCache: async (key) => {
+            return groupCache.get(key);
+        },
+        groupMetadataCacheSet: async (key, value) => {
+            groupCache.set(key, value);
+        },
+        getMessage: async (key) => {
+            return (await store.loadMessage?.(key.remoteJid, key.id)) || undefined;
          }
     });
     store.bind(bmm.ev);
@@ -205,6 +211,7 @@ async function startBmmBot({ authId, phoneNumber, country, pairingMethod, onStat
     let notifiedPercents = new Set();
 
     bmm.ev.on('messages.upsert', async ({ messages }) => {
+        //console.log('Received messages:', messages);
 
         if (isInitialStart) {
         

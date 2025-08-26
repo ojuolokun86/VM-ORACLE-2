@@ -47,10 +47,6 @@ async function registerAndDeploy({
       logger: pino({ level: 'silent' }),
       browser: ['Windows', 'Chrome', '128.0.6613.137'],
       printQRInTerminal: false,
-      syncFullHistory: false,
-      shouldSyncHistoryMessage: false,
-      generateHighQualityLinkPreview: false,
-      getMessage: async () => undefined
     });
 
     sock.ev.on('creds.update', saveCreds);

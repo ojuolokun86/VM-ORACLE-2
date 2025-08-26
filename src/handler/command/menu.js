@@ -73,6 +73,8 @@ const getMainMenu = (
 > report → Send a report
 > news → Get the latest headlines from Google News
 > news <country> → Country news (e.g., news ng, news us, news uk)
+> delete → Delete any message by replying to it both dm and group
+> del → Delete any message by replying to it both dm and group
 
 🤖 *AI* 
 > ai → Chat with AI

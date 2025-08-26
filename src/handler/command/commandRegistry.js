@@ -306,6 +306,18 @@ const commandRegistry = {
         category: 'Utilities',
         ownerOnly: true
     },
+    'delete': {
+        description: 'Delete a message',
+        usage: 'delete <message_id>',
+        category: 'Utilities',
+        ownerOnly: true
+    },
+    'del': {
+        description: 'Alias for delete',
+        usage: 'del <message_id>',
+        category: 'Utilities',
+        ownerOnly: true
+    },
 
     // Status & View Once
     'vv': {

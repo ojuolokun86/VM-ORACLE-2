@@ -32,6 +32,50 @@ class YouTubeDownloader {
         this.tempDir = tempDir;
     }
 
+    // Build requestOptions for ytdl with headers (no proxy, no env)
+    buildRequestOptions() {
+        try {
+            // Load cookie from local project file at src/cookies.txt only
+            let cookie = '';
+            const defaultCookiePath = path.join(__dirname, '..', '..', 'cookies.txt');
+            if (fs.existsSync(defaultCookiePath)) {
+                const raw = fs.readFileSync(defaultCookiePath, 'utf8');
+                // Detect Netscape cookie file format (tab-separated columns, may start with '#')
+                const lines = raw.split(/\r?\n/).filter(Boolean);
+                if (lines.some(l => l.split('\t').length >= 7 || l.startsWith('#'))) {
+                    const pairs = [];
+                    for (const line of lines) {
+                        if (!line || line.startsWith('#')) continue;
+                        const parts = line.split('\t');
+                        if (parts.length >= 7) {
+                            const name = parts[5];
+                            const value = parts[6];
+                            if (name && value) pairs.push(`${name}=${value}`);
+                        }
+                    }
+                    cookie = pairs.join('; ');
+                } else {
+                    // Assume it's already a Cookie header string
+                    cookie = raw.trim();
+                }
+            }
+
+            // Fixed UA and language headers to look like a browser
+            const ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+            const headers = {
+                'user-agent': ua,
+                'accept-language': 'en-US,en;q=0.9',
+            };
+            if (cookie) headers.cookie = cookie;
+
+            // No proxy by default (envs intentionally ignored)
+            const requestOptions = { headers };
+            return requestOptions;
+        } catch {
+            return {};
+        }
+    }
+
     /**
      * Get video info
      * @param {string} url YouTube URL
@@ -43,7 +87,7 @@ class YouTubeDownloader {
                 throw new Error('Invalid YouTube URL');
             }
 
-            const info = await ytdl.getInfo(url);
+            const info = await ytdl.getInfo(url, { requestOptions: this.buildRequestOptions() });
             return {
                 id: info.videoDetails.videoId,
                 title: info.videoDetails.title,
@@ -55,6 +99,11 @@ class YouTubeDownloader {
             };
         } catch (error) {
             errorLog('Error getting video info:', error);
+            // Clarify common VPS block
+            const msg = String(error?.message || '');
+            if (msg.toLowerCase().includes('sign in to confirm') || msg.toLowerCase().includes('unrecoverableerror')) {
+                throw new Error('YouTube blocked this server IP. Provide cookies in src/cookies.txt (raw Cookie header or Netscape format). A residential proxy may still be required.');
+            }
             throw new Error('Failed to get video information');
         }
     }
@@ -78,7 +127,8 @@ class YouTubeDownloader {
             try {
                 const video = ytdl(url, {
                     quality: quality === 'highest' ? 'highest' : 'lowest',
-                    filter: 'videoandaudio'
+                    filter: 'videoandaudio',
+                    requestOptions: this.buildRequestOptions()
                 });
 
                 await new Promise((resolve, reject) => {
@@ -98,15 +148,15 @@ class YouTubeDownloader {
             }
 
             // Fallback: merge best video + best audio via ffmpeg
-            const fullInfo = await ytdl.getInfo(url);
+            const fullInfo = await ytdl.getInfo(url, { requestOptions: this.buildRequestOptions() });
             const bestVideo = ytdl.chooseFormat(fullInfo.formats, { quality: 'highestvideo' });
             const bestAudio = ytdl.chooseFormat(fullInfo.formats, { quality: 'highestaudio' });
             if (!bestVideo || !bestAudio) {
                 throw new Error('No suitable video/audio formats found');
             }
 
-            const videoStream = ytdl.downloadFromInfo(fullInfo, { format: bestVideo });
-            const audioStream = ytdl.downloadFromInfo(fullInfo, { format: bestAudio });
+            const videoStream = ytdl.downloadFromInfo(fullInfo, { format: bestVideo, requestOptions: this.buildRequestOptions() });
+            const audioStream = ytdl.downloadFromInfo(fullInfo, { format: bestAudio, requestOptions: this.buildRequestOptions() });
 
             await new Promise((resolve, reject) => {
                 ffmpeg()
@@ -148,7 +198,8 @@ class YouTubeDownloader {
             return new Promise((resolve, reject) => {
                 const stream = ytdl(url, {
                     quality: 'highestaudio',
-                    filter: 'audioonly'
+                    filter: 'audioonly',
+                    requestOptions: this.buildRequestOptions()
                 });
 
                 ffmpeg(stream)
@@ -260,10 +311,10 @@ async function ytCommand(sock, from, msg, { prefix, args }) {
                     const ctx = reply.message?.extendedTextMessage?.contextInfo;
                     const stanzaId = ctx?.stanzaId;
                     const isReplyToMenu = stanzaId === menuMsgId;
-                    console.log('[YT DEBUG] upsert match:', {
-                      replyFrom, from, replySender, sender, menuMsgId, stanzaId,
-                      isReplyToMenu,
-                    });
+                    //console.log('[YT DEBUG] upsert match:', {
+                    //  replyFrom, from, replySender, sender, menuMsgId, stanzaId,
+                    //  isReplyToMenu,
+                    //});
                     const withinGrace = Date.now() - menuCreatedAt < (2 * 60 * 1000); // 2 minutes grace
                     // Accept leading number even with extra text (e.g., "1 h"); optional a/v flag anywhere
                     const numMatch = trimmed.match(/^(\d{1,2})\b/);
