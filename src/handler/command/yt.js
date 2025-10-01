@@ -60,6 +60,21 @@ class YouTubeDownloader {
                 }
             }
 
+            // Debug: log cookie names only (no values) to confirm load
+            try {
+                const cookieNames = (cookie || '')
+                    .split(';')
+                    .map(s => s.trim())
+                    .filter(Boolean)
+                    .map(p => p.split('=')[0])
+                    .filter(Boolean);
+                if (cookieNames.length) {
+                    debugLog('Using cookies:', cookieNames.join(', '));
+                } else {
+                    debugLog('No cookies loaded from src/cookies.txt');
+                }
+            } catch {}
+
             // Fixed UA and language headers to look like a browser
             const ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
             const headers = {

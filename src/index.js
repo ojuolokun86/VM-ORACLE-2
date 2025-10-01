@@ -12,6 +12,7 @@ const NOTIFICATION_FILE = path.join(__dirname, '../.update-notification');
 const { deleteBmmBot } = require('./main/main');
 const { db } = require('./database/database');
 const supabase = require('./supabaseClient');
+const { startFootballUpdates } = require('./tasks/footballUpdates');
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('🛑 Unhandled Promise Rejection:', reason);
@@ -267,6 +268,7 @@ async function startAllBots() {
   await restoreAllSessionsFromSupabase(); // Restore from Supabase first
   await startAllBots(); // Then start all bots from SQLite
   syncAllUsersToSupabase(); // Sync all users to Supabase
+  startFootballUpdates(); // Start football updates scheduler
 })();
 
 // Robust graceful shutdown (sessions + settings)

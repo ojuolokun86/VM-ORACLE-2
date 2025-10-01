@@ -21,7 +21,7 @@ jobs:
           script: |
             cd ~/VM-ORACLE-2
             git pull origin main
-            npm install @whiskeysockets/baileys@latest
+            npm install @whiskeysockets/baileys@6.7.19
             npm install
             pm2 restart bmm || pm2 start src/index.js --name bmm
             # Wait for the bot to fully initialize

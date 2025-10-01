@@ -14,6 +14,7 @@ db.prepare(`
     prefix TEXT DEFAULT '.',
     status_view_mode INTEGER DEFAULT 0, -- 0: default, 1: compact, 2: detailed
     react_to_command INTEGER DEFAULT 0, -- 0: off, 1: on
+    followed_teams TEXT DEFAULT '[]',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )
 `).run();
@@ -30,16 +31,6 @@ db.prepare(`
   )
 `).run();
 
-// 🚨 Antilink Warnings Table
-db.prepare(`
-  CREATE TABLE IF NOT EXISTS antilink_warns (
-    group_id TEXT,
-    bot_id TEXT,
-    user_jid TEXT,
-    warn_count INTEGER DEFAULT 0,
-    PRIMARY KEY (group_id, bot_id, user_jid)
-  )
-`).run();
 
 db.prepare(`
   CREATE TABLE IF NOT EXISTS antidelete_settings (
@@ -106,6 +97,10 @@ try {
 } catch (e) {} // Ignore if already exists
 
 try {
+  db.prepare("ALTER TABLE users ADD COLUMN followed_teams TEXT DEFAULT '[]'").run();
+} catch (e) {} // Ignore if already exists
+
+try {
   db.prepare("ALTER TABLE antilink_settings ADD COLUMN bypass_admins INTEGER DEFAULT 1").run();
 } catch (e) {} // Ignore if already exists
 
@@ -141,6 +136,63 @@ function getUserMode(user_id) {
   const row = db.prepare(`SELECT mode FROM users WHERE user_id = ?`).get(user_id);
   return row?.mode || 'private';
 }
+function followedTeams(user_id) {
+  try {
+    const row = db.prepare(`SELECT followed_teams FROM users WHERE user_id = ?`).get(user_id);
+    const teams = JSON.parse(row?.followed_teams || '[]');
+    return Array.isArray(teams) ? teams : [];
+  } catch (error) {
+    console.error('Error getting followed teams:', error);
+    return [];
+  }
+}
+
+function addFollowedTeam(user_id, team) {
+  try {
+    const currentTeams = followedTeams(user_id);
+    if (currentTeams.some(t => t.id === team.id)) {
+      return false; // Already following
+    }
+    const updatedTeams = [...currentTeams, {
+      id: team.id,
+      name: team.name,
+      followedAt: new Date().toISOString()
+    }];
+    db.prepare(`UPDATE users SET followed_teams = ? WHERE user_id = ?`)
+      .run(JSON.stringify(updatedTeams), user_id);
+    return true;
+  } catch (error) {
+    console.error('Error adding followed team:', error);
+    return false;
+  }
+}
+
+function removeFollowedTeam(user_id, teamId) {
+  try {
+    const currentTeams = followedTeams(user_id);
+    const initialLength = currentTeams.length;
+    const updatedTeams = currentTeams.filter(team => team.id !== teamId);
+    if (updatedTeams.length === initialLength) {
+      return false;
+    }
+    db.prepare(`UPDATE users SET followed_teams = ? WHERE user_id = ?`)
+      .run(JSON.stringify(updatedTeams), user_id);
+    return true;
+  } catch (error) {
+    console.error('Error removing followed team:', error);
+    return false;
+  }
+}
+
+function isFollowingTeam(user_id, teamId) {
+  try {
+    const teams = followedTeams(user_id);
+    return teams.some(team => team.id === teamId);
+  } catch (error) {
+    console.error('Error checking if following team:', error);
+    return false;
+  }
+}
 
 function setUserMode(user_id, mode) {
   db.prepare(`UPDATE users SET mode = ? WHERE user_id = ?`).run(mode, user_id);
@@ -175,20 +227,36 @@ function setReactToCommand(user_id, enabled) {
   db.prepare(`UPDATE users SET react_to_command = ? WHERE user_id = ?`).run(enabled ? 1 : 0, user_id);
 }
 
+function recordBotActivity({ user, bot, action }) {
+  if (!user || !bot || !action) {
+    throw new Error('Missing required parameters for recordBotActivity');
+  }
+  db.prepare(
+    'INSERT INTO bot_activity (user, bot, action, time) VALUES (?, ?, ?, ?)'
+  ).run(user, bot, action, Date.now());
+}
+
 module.exports = {
+  // Database instance
   db,
+  
+  // User management
   saveUserToDb,
   userExists,
   setUserMode,
   getUserMode,
   getUserPrefix,
   setUserPrefix,
-  getBotOwnerByPhone,
-  deleteUser,
-  isBotOwner,
-   getUserStatusViewMode,
+  getUserStatusViewMode,
   setUserStatusViewMode,
-   getReactToCommand,
+  deleteUser,
+  getBotOwnerByPhone,
+  isBotOwner,
+  getReactToCommand,
   setReactToCommand,
   recordBotActivity,
+  followedTeams,
+  addFollowedTeam,
+  removeFollowedTeam,
+  isFollowingTeam
 };

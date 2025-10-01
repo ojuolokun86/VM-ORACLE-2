@@ -4,8 +4,8 @@ const { getBotInstanceCount } = require('../utils/globalStore');
 
 let io;
 const clients = new Map(); // Map<socket.id, { authId, phoneNumber }>
-//const LM_URL =  'http://localhost:4000';
-const LM_URL = process.env.LM_URL || 'http://localhost:4000';
+const LM_URL =  process.env.LM_URL;
+//const LM_URL = 'https://bmm-manager.fly.dev' || 'http://localhost:4000';
 const lmSocket = ioClient(LM_URL, {
   transports: ['websocket', 'polling'],
   reconnection: true

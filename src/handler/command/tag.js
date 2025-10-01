@@ -3,36 +3,45 @@ const { downloadMediaMessage } = require('@whiskeysockets/baileys');
 
 let lastTagAllEmoji = null; // Store the last used emoji
 const generateTagAllMessage = (groupName, sender, botOwnerName, messageContent, mentions, adminList, emoji, senderJid) => {
-    mentions = Array.isArray(mentions) ? mentions : [];
-    adminList = Array.isArray(adminList) ? adminList : [];
-    const totalMembers = mentions.length;
-    const adminIds = adminList.map(id => id.split('@')[0]);
+  mentions = Array.isArray(mentions) ? mentions : [];
+  adminList = Array.isArray(adminList) ? adminList : [];
+  const totalMembers = mentions.length;
+  const adminIds = adminList.map(id => id.split('@')[0]);
+  const timestamp = new Date().toLocaleString();
 
-    let text = `🤖 [TAG PROTOCOL INITIATED]\n`;
-    text += `────────────────────────────\n`;
-    text += `[GROUP]: ${groupName}\n`;
-    text += `[REQUESTED BY]: @${senderJid.split('@')[0]}\n`;
-    text += `[OWNER]: ${botOwnerName}\n`;
-    text += `[MESSAGE]: ${messageContent || 'No message provided'}\n`;
-    text += `────────────────────────────\n`;
-    text += `[GROUP STATS]\n`;
-    text += `• MEMBERS: ${totalMembers}\n`;
-    text += `• ADMINS: ${adminList.length}\n`;
-    text += `• NON-ADMINS: ${totalMembers - adminList.length}\n`;
-    text += `────────────────────────────\n`;
-    text += `[MENTION LIST]\n`;
-    text += mentions.map(id => {
-        const username = id.split('@')[0];
-        const isAdmin = adminIds.includes(username);
-        return `• ${isAdmin ? '👑' : emoji} @${username}`;
-    }).join('\n');
-    text += `\n────────────────────────────\n`;
-    text += `[SYSTEM]: EXECUTION COMPLETE\n`;
-    
+  // Header
+  let text = `📢 *TAG ALL NOTIFICATION* 📢\n\n`;
+  
+  // Group info
+  text += `🏷 *Group*: ${groupName}\n`;
+  text += `📊 *Members*: ${totalMembers} (👑 ${adminList.length} | 👥 ${totalMembers - adminList.length})\n`;
+  text += `⏰ *Time*: ${timestamp}\n\n`;
+  
+  // Sender and owner info
+  text += `👤 *From*: @${senderJid.split('@')[0]}\n`;
+  text += `🤖 *Bot Owner*: ${botOwnerName}\n\n`;
+  
+  // Message section
+  if (messageContent) {
+      text += `💬 *Message*:\n${messageContent}\n\n`;
+  }
+  
+  // Member list
+  text += `👥 *Mentioned Members* (${mentions.length}):\n`;
+  text += mentions.map((id, index) => {
+      const username = id.split('@')[0];
+      const isAdmin = adminIds.includes(username);
+      return `${index + 1}. ${isAdmin ? '👑' : emoji} @${username}`;
+  }).join('\n'); // One line between mentions
 
-    const allMentions = mentions.includes(senderJid) ? mentions : [senderJid, ...mentions];
-    return { text, mentions: allMentions };
+  // Footer
+  text += `\n\n🔔 *Notification sent via BMM Bot*\n`;
+  text += `👉 *Total Members*: ${totalMembers}\n`;
+  text += `👑 *Admins*: ${adminList.length}\n`;
+  text += `👥 *Members*: ${totalMembers - adminList.length}\n`;
 
+  const allMentions = mentions.includes(senderJid) ? mentions : [senderJid, ...mentions];
+  return { text, mentions: allMentions };
 };
 
 function getNewRandomEmoji() {

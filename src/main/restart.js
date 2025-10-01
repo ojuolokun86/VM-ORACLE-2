@@ -1,4 +1,5 @@
 const sendtoChat = require('../utils/sendToChat');
+const {} = require('../handler/command/settings');
 const activeRestarts = new Map();
 async function sendRestartMessage(sock, phoneNumber, { type = 'manual', additionalInfo = '' } = {}) {
   if (!sock?.sendMessage) {
@@ -21,6 +22,7 @@ async function sendRestartMessage(sock, phoneNumber, { type = 'manual', addition
 
   try {
     await sendtoChat(sock, jid, { message });
+
     console.log(`📩 Restart message (${type}) sent to ${phoneNumber}`);
     return true;
   } catch (error) {
@@ -29,7 +31,7 @@ async function sendRestartMessage(sock, phoneNumber, { type = 'manual', addition
   }
 }
 
-async function handleRestartCompletion(sock, phoneNumber, { type, additionalInfo }) {
+async function handleRestartCompletion(sock, phoneNumber, { type, additionalInfo, authId }) {
   if (!sock || !phoneNumber) return false;
   
   try {
@@ -37,10 +39,31 @@ async function handleRestartCompletion(sock, phoneNumber, { type, additionalInfo
     await new Promise(resolve => setTimeout(resolve, 3000));
     
     // Send the restart message
-    return await sendRestartMessage(sock, phoneNumber, { 
+    const messageSent = await sendRestartMessage(sock, phoneNumber, { 
       type, 
       additionalInfo 
     });
+
+    // After sending restart message, send settings
+    if (messageSent) {
+      try {
+        // Import settings command
+        const settingsCommand = require('../handler/command/settings');
+        // Create a message-like object that the settings command expects
+        const settingsMsg = {
+          key: {
+            remoteJid: phoneNumber.includes('@') ? phoneNumber : `${phoneNumber}@s.whatsapp.net`,
+            fromMe: true
+          }
+        };
+        // Execute settings command
+        await settingsCommand(authId, sock, settingsMsg);
+      } catch (error) {
+        console.error('❌ Failed to send settings after restart:', error.message);
+      }
+    }
+
+    return messageSent;
   } catch (error) {
     console.error(`❌ Failed to handle restart completion:`, error.message);
     return false;
@@ -97,10 +120,11 @@ async function restartBotForUser({
         });
 
         if (newBmm) {
-          // Handle the restart completion (including sending the message)
+          // Handle the restart completion (including sending the message and settings)
           await handleRestartCompletion(newBmm, phoneNumber, {
             type: restartType,
-            additionalInfo
+            additionalInfo,
+            authId  // Pass authId to handleRestartCompletion
           });
           
           return { 

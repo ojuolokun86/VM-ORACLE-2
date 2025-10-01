@@ -86,4 +86,28 @@ if (user) {
   }
 }
 }
-  module.exports = { syncUserSettingsFromSupabase, syncUserSettingsToSupabase };
+
+
+async function getSubscriptionInfo(authId) {
+  // fetch one row only once
+  const { data, error } = await supabase
+    .from('subscription_tokens')
+    .select('subscription_level, expiration_date')
+    .eq('user_auth_id', authId)
+    .maybeSingle(); // ← or .single(), but handle null
+  //console.log('subscription info:', data);
+  if (error) throw error;              // optional: log/throw for debugging
+  if (!data) {                         // no subscription found
+    return { subscription_level: null, daysLeft: 0 };
+  }
+
+  const daysLeft = Math.max(
+    0,
+    Math.floor((new Date(data.expiration_date).getTime() - Date.now()) / 86_400_000)
+  );
+
+  return { subscription_level: data.subscription_level, daysLeft };
+}
+
+
+  module.exports = { syncUserSettingsFromSupabase, syncUserSettingsToSupabase, getSubscriptionInfo };

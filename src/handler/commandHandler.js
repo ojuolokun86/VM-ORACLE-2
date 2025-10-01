@@ -58,6 +58,13 @@ const newsCommand = require('./command/news');
 const factCommand = require('./command/fact');
 const deleteMessageCommand = require('./command/deleteMessage');
 const pingCommand = require('./command/ping');
+const timeCommand = require('./command/timeCommand');
+const {destroyGroupCommand} = require('./command/destroyGroup');
+const { handleFootballCommand } = require('./command/football');
+const { warnCommand } = require('./command/warn');
+const { handleGameCommand } = require('./command/game');
+const { handleTrivia } = require('./command/triviaGame');
+
 
 
 
@@ -138,7 +145,7 @@ async function execute({ authId, sock, msg, textMsg, phoneNumber }) {
         break;
       case 'menu':
         const { menu } = require('./command/menu');
-        await menu(sock, from, msg, botName, mode, botId, prefix,);
+        await menu(sock, from, msg, botName, mode, botId, botLid, prefix, authId);
         break;
       case 'ai':
       case 'gpt':
@@ -149,10 +156,10 @@ async function execute({ authId, sock, msg, textMsg, phoneNumber }) {
           await aiCommand(sock, from, msg, { prefix, args, command });
           break;  
       case 'ping':
-        await pingCommand(sock, msg, textMsg);
+        await pingCommand(authId, sock, msg);
         break;
       case 'settings':
-        await settingsCommand(sock, msg);
+        await settingsCommand(authId, sock, msg);
         break;
       case 'prefix':
         await prefixCommand(sock, msg, textMsg, phoneNumber);
@@ -166,9 +173,8 @@ async function execute({ authId, sock, msg, textMsg, phoneNumber }) {
       case 'resetwarn':
         await resetWarnCommand(sock, msg, textMsg);
         break;
-      case 'echo':
-        const echoText = args.join(' ').trim();
-        await sendToChat(sock, from, { message: echoText || '🗣️ Echo what?' });
+      case 'warn':
+        await warnCommand(sock, msg, args);
         break;
       case 'warnlist':
       case 'listwarn':
@@ -319,6 +325,29 @@ async function execute({ authId, sock, msg, textMsg, phoneNumber }) {
         case 'del':
           await deleteMessageCommand(sock, from, msg);
           break;
+        case 'time':
+          await timeCommand(sock, from, msg, args);
+          break;
+        case 'destroy':
+          await destroyGroupCommand(sock, msg, command, args, from);
+          break;
+        case 'football':
+          await handleFootballCommand({ 
+            sock, 
+            msg, 
+            from, 
+            textMsg, 
+            prefix, 
+            userId: phoneNumber,  // Use phoneNumber as the user ID
+          });
+          break;
+       // Add game command to switch case
+      case 'game':
+        await handleGameCommand(sock, msg, args,);
+        break;
+      case 'trivia':
+        await handleTrivia(sock, msg, args);
+        break;
       default:
         await sendToChat(sock, from, {
           message: `❌ Unknown command: *${command}*\nType *${getUserPrefix(phoneNumber)}menu* for a list of commands.`
@@ -327,9 +356,9 @@ async function execute({ authId, sock, msg, textMsg, phoneNumber }) {
     }
   } catch (err) {
     console.error('❌ Command error:', err);
-    await sendToChat(sock, from, {
-      message: `❌ Error: ${err.message || err.toString()}`
-    });
+    // await sendToChat(sock, from, {
+    //   message: `❌ Error: ${err.message || err.toString()}`
+    // });
   }
 }
 

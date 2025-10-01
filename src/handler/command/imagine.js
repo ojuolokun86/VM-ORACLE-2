@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 /**
- * WhatsApp imagine command: Generate an AI image from a prompt.
+ * WhatsApp imagine command: Generate an AI image from a prompt using pollinations.ai
  * Usage: .imagine <your prompt>
  */
 async function imagine(sock, message, command, args, remoteJid) {
@@ -10,7 +10,7 @@ async function imagine(sock, message, command, args, remoteJid) {
             const prompt = args.join(' ').trim();
             if (!prompt) {
                 await sock.sendMessage(remoteJid, {
-                    text: 'Please provide a prompt for the image generation.\nExample: .imagine a beautiful sunset over mountains'
+                    text: '🎨 *Image Generation*\n\nPlease provide a prompt for the image generation.\n\n*Example:* .imagine a beautiful sunset over mountains'
                 }, { quoted: message });
                 return true;
             }
@@ -19,15 +19,13 @@ async function imagine(sock, message, command, args, remoteJid) {
                 text: '🎨 Generating your image... Please wait.'
             }, { quoted: message });
 
-            // Enhance the prompt for better image quality
+            // Enhance and encode the prompt
             const enhancedPrompt = enhancePrompt(prompt);
+            const encodedPrompt = encodeURIComponent(enhancedPrompt);
+            const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}`;
 
-            // Call image generation API
-            const response = await axios.get('https://api.shizo.top/ai/imagine/flux', {
-                params: {
-                    apikey: 'knightbot',
-                    prompt: enhancedPrompt
-                },
+            // Download the image
+            const response = await axios.get(imageUrl, {
                 responseType: 'arraybuffer'
             });
 
@@ -35,7 +33,7 @@ async function imagine(sock, message, command, args, remoteJid) {
 
             await sock.sendMessage(remoteJid, {
                 image: imageBuffer,
-                caption: `🎨 Generated image for prompt: "${prompt}"`
+                caption: `🎨 *Generated Image*\n\n*Prompt:* ${prompt}`
             }, { quoted: message });
 
             return true;
@@ -47,18 +45,26 @@ async function imagine(sock, message, command, args, remoteJid) {
             return true;
         }
     }
-    // ...existing fun commands...
     return false;
 }
 
 // Helper to enhance prompt with quality keywords
 function enhancePrompt(prompt) {
     const qualityEnhancers = [
-        'high quality', 'detailed', 'masterpiece', 'best quality', 'ultra realistic',
-        '4k', 'highly detailed', 'professional photography', 'cinematic lighting', 'sharp focus'
+        'masterpiece',
+        'highly detailed',
+        'professional photography',
+        'artstation',
+        'cinematic lighting',
+        'sharp focus',
+        '8k uhd',
+        'realistic'
     ];
-    const numEnhancers = Math.floor(Math.random() * 2) + 3;
-    const selectedEnhancers = qualityEnhancers.sort(() => Math.random() - 0.5).slice(0, numEnhancers);
+    const numEnhancers = Math.floor(Math.random() * 3) + 2; // Add 2-4 enhancers
+    const selectedEnhancers = qualityEnhancers
+        .sort(() => Math.random() - 0.5)
+        .slice(0, numEnhancers);
+    
     return `${prompt}, ${selectedEnhancers.join(', ')}`;
 }
 

@@ -35,7 +35,7 @@ async function playCommand(sock, chatId, message) {
         // Get the first video result
         const video = videos[0];
         const urlYt = video.url;
-
+//  const response = await axios.get(`https://apis-keith.vercel.app/download/dlmp3?url=${urlYt}`);
         // Try Violetics API first (no token required)
         let audioUrl, title;
         try {

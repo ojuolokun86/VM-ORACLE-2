@@ -1,6 +1,7 @@
 // src/commands/commandRegistry.js
 const { version } = require('../../../package.json');
 const { description } = require('./report');
+const { categories } = require('./triviaGame');
 
 const commandRegistry = {
     // Bot Control
@@ -23,6 +24,12 @@ const commandRegistry = {
     'logout': {
         description: 'Log out from bot system and clear all session ',
         usage: 'logout',
+        category: 'Bot Control',
+        ownerOnly: true
+    },
+    'react': {
+        description: 'React to commands',
+        usage: 'react',
         category: 'Bot Control',
         ownerOnly: true
     },
@@ -81,6 +88,19 @@ const commandRegistry = {
         category: 'Group',
         adminOnly: true
     },
+    'warn': {
+        description: 'Warn a user in a group by mention or reply to their message',
+        usage: 'warn @user | warn (reply to message)',
+        category: 'Group',
+        adminOnly: true
+    },
+
+    'resetwarn': {
+        description: 'Reset warnings for a user or all',
+        usage: 'resetwarn @user | resetwarn all',
+        category: 'Group',
+        ownerOnly: true
+    },
     'add': {
         description: 'Add a user to the group',
         usage: 'add <number>',
@@ -128,6 +148,17 @@ const commandRegistry = {
         usage: 'listinactive',
         category: 'Group',
         adminOnly: true
+    },
+    'destroy': {
+        description: 'Destroy this current group',
+        usage: 'destroy',
+        category: 'Group',
+        adminOnly: true
+    },
+    'time': {
+        description: 'Get the current time in a specific country',
+        usage: 'time [country]',
+        category: 'Utilities'
     },
 
     // Anti-Delete & Moderation
@@ -263,6 +294,12 @@ const commandRegistry = {
         ownerOnly: true
     },
 
+    'football': {
+        description: 'Football commands | Get football news, search for teams, follow teams, list your followed teams',
+        usage: 'football [search|follow|myteams|help]',
+        category: 'Sports'
+    },
+
     // Utilities
     'help': {
         description: 'Show help information',
@@ -315,6 +352,12 @@ const commandRegistry = {
     'del': {
         description: 'Alias for delete',
         usage: 'del <message_id>',
+        category: 'Utilities',
+        ownerOnly: true
+    },
+    'clear': {
+        description: 'Clear all messages in a chat | works in both dm and group chat',
+        usage: 'clear',
         category: 'Utilities',
         ownerOnly: true
     },
@@ -451,6 +494,19 @@ const commandRegistry = {
     usage: 'yt [, video|audio|search] [song name or link]',
     category: 'Media'
 },
+
+    // Games
+    'game': {
+        description: 'Start a word chain game in group',
+        usage: 'game wordchain',
+        category: 'Game',
+    },
+
+    'trivia': {
+        description: 'start trivia Game and choosing difficulty',
+        usage: 'trivia start category level',
+        category: 'Game',
+    },
 
 
 

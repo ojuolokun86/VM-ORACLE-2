@@ -1,7 +1,7 @@
 const sendToChat = require('../../utils/sendToChat');
 const { getUserSettings } = require('../../utils/settings');
-const { isBotOwner } = require('../../database/database');
-module.exports = async function settingsCommand(sock, msg) {
+const{ isBotOwner } = require('../../database/database')
+module.exports = async function settingsCommand(authId, sock, msg) {
   const from = msg.key.remoteJid;
   const sender = msg.key.participant || msg.key.remoteJid;
   const botId = sock.user?.id?.split(':')[0]?.split('@')[0];
@@ -13,92 +13,92 @@ module.exports = async function settingsCommand(sock, msg) {
       message: `❌ Only *${name}* can view this bot settings.`
     });
   }
-  const settings = getUserSettings(botId, from); // botId = user_id, from = groupId
+  const settings = await getUserSettings(authId, botId, from); // botId = user_id, from = groupId
   const antilink = settings.antilink || {};
   const antidelete = settings.antidelete || {};
   const mode = settings.mode || "unknown";
   const prefix = settings.prefix || ".";
-  const owner = settings.ownerName || "Unknown";
+  const owner = settings.ownerName || name;
   const commandReact = settings.commandReact
   const welcomeSettings = settings.welcomeSettings || {};
+  const followedTeams = settings.userFollowedTeams || [];
+  const { subscription_level, daysLeft } = settings;
+  const version = settings.botVersion;
+  
+  // Format subscription text
+  let subscriptionText = 'Not subscribed';
+  if (subscription_level) {
+    subscriptionText = `Level: ${subscription_level}`;
+    if (daysLeft !== undefined) {
+      subscriptionText += ` (${daysLeft} days left)`;
+    }
+  }
 
+  let welcomeText = "Not configured";
+  if (typeof welcomeSettings.welcome === 'boolean' && typeof welcomeSettings.goodbye === 'boolean') {
+    welcomeText = `Welcome: ${welcomeSettings.welcome ? "🟢 ON" : "🔴 OFF"}\nGoodbye: ${welcomeSettings.goodbye ? "🟢 ON" : "🔴 OFF"}`;
+  }
+  let antideleteText = "Not configured";
+  let forwardStatus = "";
+  if (antidelete.mode) {
+    if (antidelete.mode === 'off') antideleteText = "❌ Disabled";
+    else if (antidelete.mode === 'chat') antideleteText = "💬 Private Chats Only";
+    else if (antidelete.mode === 'group') antideleteText = "👥 Group Chats Only";
+    else if (antidelete.mode === 'both') antideleteText = "🔁 All Chats & Groups";
+    
+    // Add DM forwarding status if antidelete is enabled
+    if (antidelete.mode !== 'off' && antidelete.sendToOwner !== undefined) {
+      forwardStatus = `\n   - DM Forwarding: ${antidelete.sendToOwner ? '✅ ON' : '❌ OFF'}`;
+    }
+  }
   let statusView = "Not configured";
   if (typeof settings.statusView === 'number') {
     if (settings.statusView === 0) statusView = "Off";
     else if (settings.statusView === 1) statusView = "View Only";
     else if (settings.statusView === 2) statusView = "View & React";
   }
-  let welcomeText = "Not configured";
-    if (typeof welcomeSettings.welcome === 'boolean' && typeof welcomeSettings.goodbye === 'boolean') {
-      welcomeText = `Welcome: ${welcomeSettings.welcome ? "🟢 ON" : "🔴 OFF"} | Goodbye: ${welcomeSettings.goodbye ? "🟢 ON" : "🔴 OFF"}`;
-    }
 
-//   // Format 1: Box Style
-//   const format1 = () => `
-// ╔═⟦ BOT SETTINGS ⟧═╗
-// ║ Mode:      ${mode}
-// ║ Prefix:    ${prefix}
-// ║ Owner:     ${owner}
-// ╟─⟦ ANTILINK ⟧─────╢
-// ║ Status:    ${antilink.mode || 'N/A'}
-// ║ Warns:     ${antilink.warnLimit || 'N/A'}
-// ║ Admins:    ${antilink.bypassAdmins ? "Bypassed" : "Blocked"}
-// ╟─⟦ ANTIDELETE ⟧───╢
-// ║ Mode:      ${antidelete.mode || 'N/A'}
-// ║ Notify:    ${antidelete.sendToOwner ? "Yes" : "No"}
-// ║ Excluded:  ${antidelete.excluded ? "Yes" : "No"}
-// ╟─⟦ STATUS VIEW ⟧──╢
-// ║ View:      ${statusView}
-// ╚══════════════════╝
-// `.trim();
+  // Format followed teams
+  let teamText = "❌ No teams followed yet";
+  if (followedTeams && followedTeams.length > 0) {
+    teamText = followedTeams
+      .map((team, index) => {
+        const teamName = team.name || 'Unknown Team';
+        const teamId = team.id ? `(ID: ${team.id})` : '';
+        return `⚽ ${index + 1}. ${teamName} ${teamId}`;
+      })
+      .join('\n');
+  }
 
-  // Format 2: Bold Star Style
-//   const format2 = () => `
-// ╔═══════ BOT SETTINGS ══════╗
-// ║ Mode:    *${mode}*        ║
-// ║ Prefix:  *${prefix}*      ║
-// ║ Owner:   *${owner}*       ║
-// ╠═════ ANTI-LINK ═══════════╣
-// ║ Status:  *${antilink.mode || 'N/A'}*         ║
-// ║ Warn Limit:    *${antilink.warnLimit || 'N/A'}*    ║
-// ║ Bypass Admins: *${antilink.bypassAdmins ? "Yes" : "No"}*       ║
-// ╠═════ ANTI-DELETE ══════════════╣
-// ║ Mode:          *${antidelete.mode || 'N/A'}*       ║
-// ║ Send to Owner: *${antidelete.sendToOwner ? "Yes" : "No"}*     ║
-// ║ Excluded:      *${antidelete.excluded ? "Yes" : "No"}*        ║
-// ╠═════ STATUS VIEW ══════════════╣
-// ║ Status View:   *${statusView}*        ║
-// ╚════════════════════════════════╝
-// `.trim();
+  
 
   // Format 3: Simple Style
   const formatRobotic = () => `
-  🤖 [SYSTEM CONFIGURATION REPORT]
-  
-  [MODE]: ${mode.toUpperCase()}
-  [PREFIX]: ${prefix}
-  [OWNER]: ${owner}
-  [COMMAND REACT]: ${commandReact ? "ENABLED" : "DISABLED"}
-  
-  --- [SECURITY PROTOCOL: ANTI-LINK] ---
-  STATUS: ${antilink.mode || 'N/A'}
-  WARN LIMIT: ${antilink.warnLimit || 'N/A'}
-  ADMIN BYPASS: ${antilink.bypassAdmins ? "TRUE" : "FALSE"}
-  
-  --- [SECURITY PROTOCOL: ANTI-DELETE] ---
-  STATUS: ${antidelete.mode || 'N/A'}
-  FORWARD TO OWNER: ${antidelete.sendToOwner ? "TRUE" : "FALSE"}
-  EXCLUDED CHATS: ${antidelete.excluded ? "YES" : "NO"}
-  
-  --- [VISIBILITY MATRIX: STATUS VIEW] ---
-  CURRENT SETTING: ${statusView}
-  
-  --- [GREETING MODULE] ---
-  WELCOME/GOODBYE: ${welcomeText}
-  
-  [NOTICE]: Only root-level operators can modify these parameters.
-  [SYSTEM]: End of diagnostic output.
-  `.trim();
+⚙️ *BOT SETTINGS REPORT*
+
+� *Auth ID*: ${authId}
+� *Owner*: ${owner}
+� *Mode*: ${mode}
+� *Prefix*: ${prefix}
+� *Subscription*: ${subscriptionText}
+� *Status View*: ${statusView}
+${version ? `� *Version*: ${version}` : ''}
+✨ *Command React*: ${commandReact ? '✅ ON' : '❌ OFF'}
+
+🛡️ *Anti-link*: ${antilink?.enabled ? '✅ ON' : '❌ OFF'}
+${antilink?.enabled ? `   - Action: ${antilink.action || 'warn'}
+   - Excluded: ${antilink.excluded?.length || 0} groups` : ''}
+
+🛡️ *Anti-delete*: ${antideleteText}${forwardStatus}
+
+� *Welcome/Goodbye*: ${welcomeText}
+
+⚽ *Followed Teams*:
+${teamText}
+
+� *Note*: Use commands to modify these settings
+`;
+
   
 
   // Pick a random format
@@ -107,4 +107,5 @@ module.exports = async function settingsCommand(sock, msg) {
   const text = randomFormat();
 
   await sendToChat(sock, from, { message: text });
+  //console.log("Settings sent to", from, "with text:", text);
 };

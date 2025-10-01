@@ -1,8 +1,8 @@
 const sendToChat = require('../../utils/sendToChat');
 const { botStartTimes } = require('../../utils/globalStore');
-const { getUserSettings } = require('../../utils/settings');
 const { version } = require('../../../package.json');
 const { getContextInfo, getForwardedContext } = require('../../utils/contextInfo');
+const { getSubscriptionInfo } = require('../../database/supabaseDb');
 
 const reactionEmojis = ['⚡', '🚀', '🔥', '✨', '💨'];
 
@@ -14,12 +14,13 @@ function formatUptime(totalSeconds) {
   return `${pad(h)}:${pad(m)}:${pad(s)}`;
 }
 
-async function pingCommand(sock, msg) {
+async function pingCommand(authId, sock, msg) {
   const chatId = msg?.key?.remoteJid;
   const botId = sock?.user?.id?.split(':')[0]?.split('@')[0];
   const botName = 'BMM V2 ENGINE';
-  const { ownerName } = getUserSettings(botId);
+  const ownerName = sock.user.name;
   const randomEmoji = reactionEmojis[Math.floor(Math.random() * reactionEmojis.length)];
+  const { subscription_level, daysLeft } = await getSubscriptionInfo(authId);
 
   // Measure round-trip ping with a minimal direct send
   const t0 = Date.now();
@@ -45,7 +46,10 @@ async function pingCommand(sock, msg) {
     `│ • Version: v${version}`,
     `│ • Bot: ${botName}`,
     `│ • Owner: ${ownerName || '—'}`,
-    '╰─ ✅ Running ───────╯'
+    `│ • Subscription: ${subscription_level || '—'} ${daysLeft ? `(${daysLeft} days left)` : ''}`,
+    '╰─ ✅ Running ───────╯',
+    '> Note: Take note of your subscription days left.',
+    '> ©️ 2025 BMM V2. All rights reserved.'
   ].join('\n');
 
   // Final styled message via sendToChat so your context/forwarding/quoted applies

@@ -52,7 +52,7 @@ async function detectAndAct({ sock, from, msg, textMsg }) {
   const groupId = from;
   const botJid = sock.user?.id?.split(':')[0]?.split('@')[0];
   const settings = getAntilinkSettings(groupId, botJid);
-
+  const botId = botJid;
   const userJid = msg.key.participant || msg.participant || msg.participantJid || null;
   if (!userJid) return false;
 
@@ -87,7 +87,7 @@ async function detectAndAct({ sock, from, msg, textMsg }) {
     markMessageAsBotDeleted(msg.key.id);
 
     if (settings.mode === 'warn-remove') {
-      const warnCount = incrementWarn(groupId, botJid, userJid);
+      const warnCount = incrementWarn(groupId, botId, userJid, 'Sharing links', 'antilink');
       const warnLimit = settings.warnLimit || 2;
 
       // Send random warning

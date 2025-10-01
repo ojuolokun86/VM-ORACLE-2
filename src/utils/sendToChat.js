@@ -96,9 +96,22 @@ async function sendToChat(sock, chatId, options = {}) {
     await sock.sendMessage(chatId, payload, { quoted });
     //console.log(`✅ Sent to ${chatId}:`, message || '[media]');
   } catch (err) {
+    
     console.error(`❌ sendToChat error for ${chatId}:`, err.message);
   }
 }
+const { botInstances } = require('./globalStore');
+/**
+ * Send a message to a user with their name
+ */
+async function sendToUser(userId, options = {}) {
+  const sock = botInstances[userId];
+  if (!sock) throw new Error(`User ${userId} not found`);
+  const name = sock.contacts?.[userId]?.name || userId;
+  options.mentions = [userId];
+  await sendToChat(sock, userId, options);
+}
 
 module.exports = sendToChat;
+module.exports.sendToUser = sendToUser;
 module.exports.quotedInfo = quotedInfo;

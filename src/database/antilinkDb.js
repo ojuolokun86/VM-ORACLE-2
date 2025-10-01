@@ -1,5 +1,19 @@
 const { db } = require('./database');
 
+// Initialize tables
+db.prepare(`
+  CREATE TABLE IF NOT EXISTS warns (
+    group_id TEXT,
+    bot_id TEXT,
+    user_jid TEXT,
+    warn_count INTEGER DEFAULT 0,
+    reason TEXT DEFAULT NULL,
+    type TEXT DEFAULT 'manual', -- 'manual' or 'antilink'
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (group_id, bot_id, user_jid)
+  )
+`).run();
+
 // 🔍 Get antilink settings
 function getAntilinkSettings(groupId, botId) {
   const row = db.prepare(`
@@ -40,42 +54,54 @@ function setAntilinkSettings(groupId, botId, updates = {}) {
 }
 
 // 🚨 Increase warn
-function incrementWarn(groupId, botId, userJid, reason = 'No reason') {
-  const row = db.prepare(`
-    SELECT warn_count, reasons FROM antilink_warns
-    WHERE group_id = ? AND bot_id = ? AND user_jid = ?
-  `).get(groupId, botId, userJid);
+function incrementWarn(groupId, botId, userJid, reason = '', warnType = 'manual') {
+  const stmt = db.prepare(`
+    INSERT INTO warns (group_id, bot_id, user_jid, warn_count, reason, type)
+    VALUES (?, ?, ?, 1, ?, ?)
+    ON CONFLICT(group_id, bot_id, user_jid) 
+    DO UPDATE SET 
+      warn_count = warn_count + 1,
+      reason = CASE 
+        WHEN reason IS NULL OR reason = '' THEN ?
+        ELSE reason || ' | ' || ?
+      END,
+      type = ?,
+      timestamp = CURRENT_TIMESTAMP
+    RETURNING warn_count
+  `);
 
-  const newCount = row ? row.warn_count + 1 : 1;
-  const reasons = row?.reasons ? `${row.reasons}\n• ${reason}` : `• ${reason}`;
+  const prefix = warnType === 'antilink' ? '[ANTILINK] ' : '';
+  const finalReason = prefix + (reason || 'No reason specified');
 
-  if (row) {
-    db.prepare(`UPDATE antilink_warns SET warn_count = ?, reasons = ? WHERE group_id = ? AND bot_id = ? AND user_jid = ?`)
-      .run(newCount, reasons, groupId, botId, userJid);
-  } else {
-    db.prepare(`INSERT INTO antilink_warns (group_id, bot_id, user_jid, warn_count, reasons) VALUES (?, ?, ?, ?, ?)`)
-      .run(groupId, botId, userJid, 1, reasons);
-  }
-
-  return newCount;
+  const result = stmt.get(
+    groupId, 
+    botId, 
+    userJid, 
+    finalReason,
+    warnType,
+    finalReason,
+    finalReason,
+    warnType
+  );
+  return result.warn_count;
 }
 
 // 🔄 Reset warning
 function resetWarn(groupId, botId, userJid) {
-  db.prepare(`UPDATE antilink_warns SET warn_count = 0 WHERE group_id = ? AND bot_id = ? AND user_jid = ?`)
+  db.prepare(`DELETE FROM warns WHERE group_id = ? AND bot_id = ? AND user_jid = ?`)
     .run(groupId, botId, userJid);
 }
 
 // ❌ Delete all user data
 function deleteAllAntilinkSettings(botId) {
   db.prepare(`DELETE FROM antilink_settings WHERE bot_id = ?`).run(botId);
-  db.prepare(`DELETE FROM antilink_warns WHERE bot_id = ?`).run(botId);
+  db.prepare(`DELETE FROM warns WHERE bot_id = ?`).run(botId);
 }
 
 // ❌ Optional: delete group-specific settings
 function deleteAntilinkGroup(botId, groupId) {
   db.prepare(`DELETE FROM antilink_settings WHERE group_id = ? AND bot_id = ?`).run(groupId, botId);
-  db.prepare(`DELETE FROM antilink_warns WHERE group_id = ? AND bot_id = ?`).run(groupId, botId);
+  db.prepare(`DELETE FROM warns WHERE group_id = ? AND bot_id = ?`).run(groupId, botId);
 }
 
 module.exports = {

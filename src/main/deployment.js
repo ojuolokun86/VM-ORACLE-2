@@ -1,7 +1,7 @@
 const {
   makeWASocket,
-  fetchLatestBaileysVersion,
-  makeCacheableSignalKeyStore
+  makeCacheableSignalKeyStore,
+  Browsers
 } = require('@whiskeysockets/baileys');
 const { startBmmBot } = require('./main');
 const pino = require('pino');
@@ -29,14 +29,11 @@ async function registerAndDeploy({
 
   // Use SQLite for session persistence
   const { state, saveCreds } = await useSQLiteAuthState(authId, phoneNumber);
-  const { version } = await fetchLatestBaileysVersion();
-
   let registrationDone = false;
   let pairingCodeRequested = false;
 
   return new Promise((resolve, reject) => {
     const sock = makeWASocket({
-      version,
       auth: {
         creds: state.creds,
         keys: makeCacheableSignalKeyStore(
@@ -45,7 +42,7 @@ async function registerAndDeploy({
         )
       },
       logger: pino({ level: 'silent' }),
-      browser: ['Windows', 'Chrome', '128.0.6613.137'],
+      browser: Browsers.macOS('Chrome'),
       printQRInTerminal: false,
     });
 
