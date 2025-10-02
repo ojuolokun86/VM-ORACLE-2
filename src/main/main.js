@@ -39,7 +39,6 @@ async function startBmmBot({ authId, phoneNumber, country, pairingMethod, onStat
             creds: state.creds,
             keys: makeCacheableSignalKeyStore(state.keys, pino({ level: "fatal" }).child({ level: "fatal" })),
         },
-        browser: Browsers.macOS('Chrome'),
         logger: pino({ level: 'silent' }),
         printQRInTerminal: false,
         generateHighQualityLinkPreview: true,
@@ -140,7 +139,7 @@ async function startBmmBot({ authId, phoneNumber, country, pairingMethod, onStat
             let code = reason?.output?.statusCode || reason?.statusCode || reason?.code || reason;
             if (Boom.isBoom(reason)) code = reason.output.statusCode;
 
-            console.log(`🔌 Disconnected for reason:`, code);
+            console.log(`🔌 Disconnected for reason:`, reason);
 
             // Handle session deletion for bad session/logged out/failure
             if (
@@ -379,8 +378,10 @@ async function deleteBmmBot(authId, phoneNumber) {
     const { deleteSession } = require('../database/sqliteAuthState');
     await deleteSession(authId, phoneNumber);
 
-    const { deleteUser } = require('../database/database');
+    const { deleteUser,} = require('../database/database');
     await deleteUser(authId, phoneNumber);
+    const { cleanupGameState } = require('../handler/command/adventureGame');
+    await cleanupGameState(phoneNumber);
 
     await deleteSessionFromSupabase(phoneNumber);
     sessions.delete(sessionKey);

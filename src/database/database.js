@@ -236,6 +236,39 @@ function recordBotActivity({ user, bot, action }) {
   ).run(user, bot, action, Date.now());
 }
 
+// Update adventure games table to use only playerId
+db.prepare(`
+  DROP TABLE IF EXISTS adventure_games
+`).run();
+
+db.prepare(`
+  CREATE TABLE IF NOT EXISTS adventure_games (
+    player_id TEXT PRIMARY KEY,
+    game_state TEXT,
+    last_updated DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`).run();
+
+// Update helper functions to use only playerId
+function saveGameState(playerId, gameState) {
+  const stmt = db.prepare(`
+    INSERT OR REPLACE INTO adventure_games (player_id, game_state, last_updated)
+    VALUES (?, ?, CURRENT_TIMESTAMP)
+  `);
+  stmt.run(playerId, JSON.stringify(gameState));
+}
+
+function loadGameState(playerId) {
+  const row = db.prepare(`
+    SELECT game_state FROM adventure_games WHERE player_id = ?
+  `).get(playerId);
+  return row ? JSON.parse(row.game_state) : null;
+}
+
+function deleteGameState(playerId) {
+  db.prepare(`DELETE FROM adventure_games WHERE player_id = ?`).run(playerId);
+}
+
 module.exports = {
   // Database instance
   db,
@@ -258,5 +291,9 @@ module.exports = {
   followedTeams,
   addFollowedTeam,
   removeFollowedTeam,
-  isFollowingTeam
+  isFollowingTeam,
+  // Game state management
+  saveGameState,
+  loadGameState,
+  deleteGameState
 };

@@ -83,6 +83,7 @@ const getMainMenu = (
 > 📹 yt video → Download a video from YouTube
 > 🎧 yt audio → Download an audio from YouTube
 > 🔍 yt search → Search YouTube videos or songs
+> 🖼️ bg → Remove background from image
 
 ⚽ *SPORTS*
 

@@ -42,12 +42,10 @@ async function registerAndDeploy({
         )
       },
       logger: pino({ level: 'silent' }),
-      browser: Browsers.macOS('Chrome'),
       printQRInTerminal: false,
     });
 
     sock.ev.on('creds.update', saveCreds);
-
     sock.ev.on('connection.update', async (update) => {
       //console.log('🔄 Connection update:', update);
       if (registrationDone) return;

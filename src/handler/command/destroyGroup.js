@@ -155,13 +155,13 @@ async function destroyGroupCommand(sock, msg, command, args, from) {
                 // Get updated group metadata
                 const metadata = await sock.groupMetadata(groupId);
                 const participants = metadata.participants;
-                // Get bot's JID and normalize it for comparison
-                const botRawJid = sock.user?.lid; // Could be in format '12345678:1@s.whatsapp.net'
-                // Extract the base number before any ':' or '@'
+                const botRawJid = sock.user?.lid;
                 const botNumber = botRawJid?.split(':')[0]?.split('@')[0];
-                const botJid = `${botNumber}@lid`; // Convert to expected format for comparison
-                const intervalMs = 2000; // 2 seconds delay between operations
-                
+                const botJid = `${botNumber}@lid`;
+                const intervalMs = 2000;
+
+                let hasErrors = false; // Track if we encounter any critical errors
+
                 // 1. First, demote all admins except the bot
                 const adminsToDemote = participants.filter(p => {
                     const pNumber = p.id.split('@')[0];
@@ -183,23 +183,25 @@ async function destroyGroupCommand(sock, msg, command, args, from) {
                             await new Promise(resolve => setTimeout(resolve, intervalMs));
                         } catch (error) {
                             console.error(`Failed to demote ${admin.id}:`, error);
+                            hasErrors = true;
                             await sendToChat(sock, groupId, {
                                 message: `❌ Failed to demote @${admin.id.split('@')[0]}`,
                                 mentions: [admin.id]
                             });
-                            // Continue with next admin even if one fails
                             await new Promise(resolve => setTimeout(resolve, 1500));
                         }
                     }
                 }
+
+                // Check if demotion phase had critical errors
+                if (hasErrors) {
+                    await sendToChat(sock, groupId, {
+                        message: '❌ Destroy group operation cancelled due to demotion failures.'
+                    });
+                    return;
+                }
                 
-                // Debug: Log all participants and their admin status
-                console.log('=== ALL PARTICIPANTS ===');
-                participants.forEach(p => {
-                    console.log(`- ${p.id} (admin: ${p.admin}, isBot: ${p.id === botJid})`);
-                });
-                
-                // 2. Now remove all members (including demoted admins) except the bot and command sender
+                // 2. Remove all members except bot and sender
                 const membersToRemove = participants.filter(p => {
                     const pNumber = p.id.split('@')[0];
                     return pNumber !== botNumber && p.id !== senderId;
@@ -224,20 +226,12 @@ async function destroyGroupCommand(sock, msg, command, args, from) {
                                 message: `❌ Failed to remove @${member.id.split('@')[0]}`,
                                 mentions: [member.id]
                             });
-                            // Continue with next member even if one fails
                             await new Promise(resolve => setTimeout(resolve, 1500));
                         }
                     }
                 }
                 
-                if (failedDemote) {
-                    await sendToChat(sock, groupId, {
-                        message: '❌ Destroy group operation cancelled due to demotion failure.'
-                    });
-                    return;
-                }
-                
-                // 3. Leave the group (don't demote the bot)
+                // 3. Finally leave the group
                 await sendToChat(sock, groupId, { 
                     message: '👋 Leaving the group now...' 
                 });

@@ -10,6 +10,7 @@ const sendToChat = require('../utils/sendToChat');
 const handleNewsletterAutoReact = require('./features/newsletterAutoReact');
 const { handleGameCommand, handleReply, handleWordChain, games } = require('./command/game');
 const { handleTrivia, handleTriviaReply } = require('./command/triviaGame');
+const { handleAdventure, handleAdventureReply, adventureGames } = require('./command/adventureGame');
 
 
 /*
@@ -58,15 +59,21 @@ if (msg.key?.remoteJid?.endsWith('@g.us') && msg.key?.participant) {
     if (game?.isActive) {
             // Handle words during active game
       await handleWordChain(sock, msg, textMsg);
-      } else if (msg.message?.extendedTextMessage?.text) {
+      } else if (msg.message?.extendedTextMessage?.text || msg.message?.conversation) {
             // Handle game join replies during registration
       const isWordChainReply = await handleReply(sock, msg);
         if (!isWordChainReply) {
             // If not word chain, try trivia game
-            await handleTriviaReply(sock, msg);
+        const triedTrivia = await handleTriviaReply(sock, msg);
+        if (!triedTrivia) {
+          // Only try adventure replies if there is an active adventure for this bot
+          // const advGame = adventureGames.get(botId);
+          // if (advGame?.isActive) {
+          //   await handleAdventureReply(sock, msg);
+          // }
         }
     }
-}
+}}
 catch (err) {
   // await sendToChat(sock, from, {
   //   message: '❌ Message handler error: ' + err + 'Please use report command with the error message to report this issue.'

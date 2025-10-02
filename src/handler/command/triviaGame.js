@@ -1,6 +1,7 @@
 const axios = require('axios');
 const sendToChat = require('../../utils/sendToChat');
 const { gamePreview } = require('./game');
+const { registerCommand } = require('./commandRegistry');
 
 // Game states
 const triviaGames = new Map();
@@ -483,7 +484,20 @@ function decodeHTMLEntities(text) {
                .replace(/&#039;/g, "'");
 }
 
-// Update module exports
+
+
+// Register trivia commands
+registerCommand('trivia', {
+    description: 'Play a trivia game with various categories',
+    usage: 'trivia [start|join|stop] [category] [difficulty]',
+    category: 'Game',
+    examples: [
+        'trivia start SCIENCE medium',
+        'trivia join',
+        'trivia stop'
+    ]
+});
+
 module.exports = {
     handleTrivia,
     handleTriviaReply,

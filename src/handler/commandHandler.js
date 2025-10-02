@@ -64,6 +64,8 @@ const { handleFootballCommand } = require('./command/football');
 const { warnCommand } = require('./command/warn');
 const { handleGameCommand } = require('./command/game');
 const { handleTrivia } = require('./command/triviaGame');
+const { handleAdventure } = require('./command/adventureGame');
+const { handleBgRemoval } = require('./command/bg');
 
 
 
@@ -347,6 +349,13 @@ async function execute({ authId, sock, msg, textMsg, phoneNumber }) {
         break;
       case 'trivia':
         await handleTrivia(sock, msg, args);
+        break;
+      // case 'rpg':
+      //   await handleAdventure(sock, msg, args);
+      //   console.log('Adventure command executed');
+      //   break;
+      case 'bg':
+        await handleBgRemoval(sock, msg);
         break;
       default:
         await sendToChat(sock, from, {

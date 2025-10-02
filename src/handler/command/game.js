@@ -1,9 +1,9 @@
 const sendToChat = require('../../utils/sendToChat');
 const fs = require('fs');
 const path = require('path');
-const { getContextInfo } = require('../../utils/contextInfo');
 const imagePath = path.join(__dirname, '../../assets/game2.jpg');
 let imageBuffer = null;
+const { registerCommand } = require('./commandRegistry');
 
 if (fs.existsSync(imagePath)) {
   imageBuffer = fs.readFileSync(imagePath);
@@ -425,6 +425,24 @@ async function showGameStats(sock, groupId, game, winner = null) {
         mentions: scoreBoard.map(score => score.playerId)
     });
 }
+
+registerCommand('game', {
+    description: 'Play word chain game with friends',
+    usage: 'game [wordchain|start|end]',
+    category: 'Game',
+    examples: [
+        'game wordchain - Start new word chain game',
+        'game end - End current game'
+    ],
+    aliases: ['chain', 'wordgame'],
+    longDescription: `A multiplayer word chain game where players take turns saying words.\n` +
+                    `Each word must start with the last letter of the previous word.\n` +
+                    `Features:\n` +
+                    `• Score tracking\n` +
+                    `• Word validation\n` +
+                    `• Time limits\n` +
+                    `• Multiple players`
+});
 
 // Update module exports
 module.exports = { 
